@@ -23,6 +23,29 @@
 
 ---
 
+## 2026-03-19 セッション記録 #11
+
+### やったこと
+- 本番 secrets 登録（`wrangler secret put` × 13個）
+  - GitHub OAuth App（本番用）を新規作成し CLIENT_ID / CLIENT_SECRET を登録
+  - その他（COOKIE_ENCRYPTION_KEY / GITHUB_TOKEN / Supabase / Google Calendar）は `.dev.vars` の値をそのまま登録
+- `wrangler deploy` で本番デプロイ完了
+  - デプロイ先: `https://furikaeri-mcp.okumuradaichi2007.workers.dev`
+  - MCP エンドポイント: `https://furikaeri-mcp.okumuradaichi2007.workers.dev/mcp`
+- GitHub OAuth App の Callback URL を本番 URL に更新
+
+### 技術メモ
+- 初回デプロイ前に Cloudflare ダッシュボードで Workers & Pages を一度開く必要がある（workers.dev サブドメインの自動作成のため）。開かずに `wrangler deploy` すると `code: 10063` エラーになる
+- `wrangler secret put` は非対話モードで `echo "value" | wrangler secret put KEY` として実行できる
+- 初回 `wrangler deploy` 時に Worker が存在しない場合、`wrangler secret put` が自動で Worker を作成する
+
+### 次にやりたいこと
+- claude.ai コネクター登録・動作確認
+- Claude Code への MCP 登録
+- 本番環境での全ツール実データ動作確認
+
+---
+
 ## 2026-03-19 セッション記録 #10
 
 ### やったこと

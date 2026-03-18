@@ -1,6 +1,6 @@
 # furikaeri-mcp — セッション引き継ぎ
 
-> 最終更新: 2026-03-19
+> 最終更新: 2026-03-19（セッション #11）
 > バージョン: 0.1.0
 > このドキュメントは「今どこにいるか」を記録する。コンセプト・技術設計は @docs/project.md を参照。
 
@@ -10,7 +10,7 @@
 
 ### アーキテクチャ
 
-**Cloudflare Workers + GitHub OAuth** 構成への全面移行完了。ローカル開発環境（`wrangler dev`）での動作確認済み。
+**Cloudflare Workers + GitHub OAuth** 構成への全面移行完了。本番デプロイ済み。
 
 | 項目 | 状態 |
 |---|---|
@@ -20,6 +20,11 @@
 | 全ツール Workers 対応 | **完了** |
 | wrangler.toml 設定（KV ID 設定済み） | **完了** |
 | ローカル .dev.vars 設定 | **完了** |
+| 本番 secrets 登録（13個） | **完了** |
+| `wrangler deploy` 本番デプロイ | **完了** |
+
+**本番 URL: `https://furikaeri-mcp.okumuradaichi2007.workers.dev`**
+**MCP エンドポイント: `https://furikaeri-mcp.okumuradaichi2007.workers.dev/mcp`**
 
 ### ツール実装状況
 
@@ -44,32 +49,17 @@
 
 ### 次にやること
 
-1. **残りツールの動作確認**（`wrangler dev` 環境で MCP Inspector から）
-   - `get_tasks`、`get_peak_logs`、`get_calendar_events` を実際のデータで確認
+1. **claude.ai コネクター登録**
+   - Settings > Integrations > Add custom integration
+   - URL: `https://furikaeri-mcp.okumuradaichi2007.workers.dev/mcp`
 
-2. **本番デプロイ**
+2. **Claude Code への登録**（任意）
    ```bash
-   # 本番 secrets 登録
-   wrangler secret put GITHUB_CLIENT_ID
-   wrangler secret put GITHUB_CLIENT_SECRET
-   wrangler secret put COOKIE_ENCRYPTION_KEY
-   wrangler secret put GITHUB_TOKEN
-   wrangler secret put YARUKOTO_SUPABASE_URL
-   wrangler secret put YARUKOTO_SUPABASE_SERVICE_KEY
-   wrangler secret put YARUKOTO_USER_ID
-   wrangler secret put PEAK_LOG_SUPABASE_URL
-   wrangler secret put PEAK_LOG_SUPABASE_SERVICE_KEY
-   wrangler secret put PEAK_LOG_USER_ID
-   wrangler secret put GOOGLE_CLIENT_ID
-   wrangler secret put GOOGLE_CLIENT_SECRET
-   wrangler secret put GOOGLE_REFRESH_TOKEN
-
-   wrangler deploy
+   claude mcp add furikaeri --transport http https://furikaeri-mcp.okumuradaichi2007.workers.dev/mcp
    ```
 
-3. **Claude への登録**
-   - Claude.ai: Settings > Connectors > Add custom connector → `https://furikaeri-mcp.<account>.workers.dev/mcp`
-   - Claude Code: `claude mcp add furikaeri --transport http https://furikaeri-mcp.<account>.workers.dev/mcp`
+3. **本番環境での全ツール動作確認**
+   - get_tasks / get_peak_logs / get_calendar_events / get_commits を実データで確認
 
 ### その他の注意点
 
@@ -84,5 +74,6 @@
 
 ## 次のセッションで相談したいこと
 
-1. 残りツール（get_tasks / get_peak_logs / get_calendar_events）の実データ接続テスト
-2. `wrangler deploy` で本番デプロイ → claude.ai コネクター / Claude Code 登録
+1. 本番環境での全ツール実データ動作確認
+2. 日記アプリ開発（`get_diary` のスタブ解除）
+3. 追加ツール・機能の検討
