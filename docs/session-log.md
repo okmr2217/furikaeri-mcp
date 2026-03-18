@@ -23,6 +23,43 @@
 
 ---
 
+## 2026-03-19 セッション記録 #9
+
+### やったこと
+- Cloudflare Workers + GitHub OAuth 構成へ全面移行
+  - Prisma / Express / Node.js 依存を完全削除
+  - `package.json` を Workers 向けに書き換え（wrangler, agents, @cloudflare/workers-oauth-provider 等）
+  - `tsconfig.json` を Workers（bundler モード）向けに変更
+  - `wrangler.toml` を新規作成（Durable Objects, KV binding 設定）
+  - `src/index.ts` を McpAgent + OAuthProvider ベースに全面書き換え
+  - `src/github-handler.ts` を新規作成（GitHub OAuth フロー）
+  - `src/utils.ts` / `src/workers-oauth-utils.ts` を新規作成（OAuth ユーティリティ）
+  - `src/lib/supabase.ts` を新規作成（Supabase JS Client ヘルパー）
+  - `src/lib/google-calendar.ts` を googleapis → fetch ベースに書き換え
+  - `src/lib/photos-url.ts` を Buffer → Uint8Array / btoa に書き換え
+  - `src/lib/date-utils.ts` を date-fns → 標準 Date + 手動 JST 計算に変更
+  - `src/lib/github.ts` を `process.env` → `env: Env` に変更
+  - 全ツール（7本）を `env: Env` 受け渡し形式に変更、Supabase PostgREST クエリに移行
+  - `src/types/index.ts` に `Env` インターフェースを追加
+  - Prisma 関連ファイル（`prisma/` ディレクトリ、`src/lib/prisma-*.ts`）を削除
+
+### 技術メモ
+- `agents@0.5.0` が `@modelcontextprotocol/sdk@1.26.0` をピン留めしている。外部で `^1.x` を入れると別バージョンがインストールされ private property の型不一致が発生する → `"@modelcontextprotocol/sdk": "1.26.0"` で固定することで解消
+- `github-handler.ts` で `import { env } from "cloudflare:workers"` を使うと型が合わない。`c.env` （Hono コンテキスト）から取得するのが正解
+- Supabase PostgREST の OR 条件内で AND を組み合わせる構文: `.or("and(col.gte.X,col.lt.Y),...")`
+- `catch (_e)` は ESLint `no-unused-vars` に引っかかる。`catch {}` に統一する
+
+### 次にやりたいこと
+1. KV namespace を作成し `wrangler.toml` の `<Add-KV-ID-here>` を実際の ID に更新
+2. GitHub OAuth App を作成（ローカル用・本番用各1つ）
+3. `.dev.vars` を作成してローカル開発 secrets を設定
+4. `ALLOWED_USERNAMES` に自分の GitHub ユーザー名を追記
+5. `wrangler dev` でローカル動作確認（MCP Inspector で接続テスト）
+6. 問題なければ `wrangler deploy` で本番デプロイ
+7. `claude mcp add furikaeri --transport http https://furikaeri-mcp.<account>.workers.dev/mcp` で登録
+
+---
+
 ## 2026-03-19 セッション記録 #8
 
 ### やったこと
