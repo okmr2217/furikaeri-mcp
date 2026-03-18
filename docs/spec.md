@@ -15,6 +15,7 @@ furikaeri-mcp は、複数のデータソースを統合して「ある日の振
 |---|---|---|
 | Yarukoto（TODO アプリ） | Supabase PostgreSQL（Prisma） | タスクの完了・未完了・スキップ |
 | Peak Log（ピーク体験記録） | Supabase PostgreSQL（Prisma） | Activity ログ・余韻（Reflection） |
+| GitHub | GitHub REST API（PAT 認証） | コミット履歴 |
 | 日記アプリ（新規開発予定） | Supabase PostgreSQL（Prisma） | 日記エントリ |
 | Google Calendar | Google Calendar API v3 | 予定・イベント |
 | Google Photos | URL 生成（API 不使用） | 検索 URL |
@@ -45,6 +46,9 @@ DIARY_DATABASE_URL=postgresql://...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REFRESH_TOKEN=...
+
+# GitHub
+GITHUB_TOKEN=ghp_...
 
 # userId（各アプリでの自分の userId）
 YARUKOTO_USER_ID=cuid_xxx
@@ -174,7 +178,79 @@ INCLUDE activity, reflection
 
 ---
 
-### 4.3 get_diary
+### 4.3 get_commits
+
+GitHub リポジトリのコミット履歴を日付範囲で取得する。
+複数リポジトリを指定でき、`Promise.all` で並列取得する。
+
+**パラメータ:**
+
+| 名前 | 型 | 必須 | 説明 |
+|---|---|---|---|
+| repos | string[] | ✓ | 対象リポジトリ（`"owner/repo"` 形式） |
+| since | string (YYYY-MM-DD) | ✓ | 取得開始日（JST） |
+| until | string (YYYY-MM-DD) | ✓ | 取得終了日（JST、この日を含む） |
+| include_stats | boolean | - | デフォルト false。true で追加/削除行数・変更ファイル名を含む |
+
+**返却データ（include_stats: false）:**
+
+```json
+{
+  "since": "2026-03-14",
+  "until": "2026-03-14",
+  "results": [
+    {
+      "repo": "username/repo1",
+      "commits": [
+        {
+          "sha": "abc1234",
+          "message": "feat: get_tasks ツールを実装",
+          "author": "username",
+          "date": "2026-03-14T14:30:00Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**include_stats: true の場合:** 各コミットに以下が追加される
+
+```json
+{
+  "stats": { "additions": 120, "deletions": 15 },
+  "files": ["src/tools/get-tasks.ts", "src/index.ts"]
+}
+```
+
+**API 呼び出し:**
+
+```
+// コミット一覧
+GET /repos/{owner}/{repo}/commits
+  ?since={since}T00:00:00+09:00
+  &until={until}T23:59:59+09:00
+Authorization: Bearer {GITHUB_TOKEN}
+
+// コミット詳細（include_stats: true のときのみ）
+GET /repos/{owner}/{repo}/commits/{sha}
+Authorization: Bearer {GITHUB_TOKEN}
+```
+
+**実装参照（src/lib/github.ts）:**
+
+```typescript
+export function getGithubHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github+json',
+  };
+}
+```
+
+---
+
+### 4.4 get_diary
 
 日記アプリのエントリを日付指定で取得する。
 
@@ -206,7 +282,7 @@ INCLUDE activity, reflection
 
 ---
 
-### 4.4 get_calendar_events
+### 4.5 get_calendar_events
 
 Google Calendar の予定を日付指定で取得する。
 
@@ -254,7 +330,7 @@ calendar.events.list({
 
 ---
 
-### 4.5 get_photos_url
+### 4.6 get_photos_url
 
 Google Photos の検索 URL を生成する（API 不使用）。
 
@@ -326,7 +402,7 @@ function generatePhotosSearchUrl(query: string): string {
 
 ---
 
-### 4.6 get_day_summary（集約ツール）
+### 4.7 get_day_summary（集約ツール）
 
 上記 5 ツールを内部的にまとめて呼び出し、1 日分のデータを一括返却する。
 
@@ -391,6 +467,7 @@ furikaeri-mcp/
 │   ├── tools/
 │   │   ├── get-tasks.ts          # Yarukoto タスク取得
 │   │   ├── get-peak-logs.ts      # Peak Log ログ取得
+│   │   ├── get-commits.ts        # GitHub コミット履歴取得
 │   │   ├── get-diary.ts          # 日記エントリ取得（スタブ）
 │   │   ├── get-calendar-events.ts # Google Calendar 予定取得
 │   │   ├── get-photos-url.ts     # Google Photos URL 生成
@@ -398,6 +475,7 @@ furikaeri-mcp/
 │   ├── lib/
 │   │   ├── prisma-yarukoto.ts    # Yarukoto 用 Prisma Client
 │   │   ├── prisma-peak-log.ts    # Peak Log 用 Prisma Client
+│   │   ├── github.ts             # GitHub API ヘッダー・クライアント
 │   │   ├── google-calendar.ts    # Google Calendar API クライアント
 │   │   ├── photos-url.ts         # Google Photos URL 生成ロジック
 │   │   └── date-utils.ts         # 日付ユーティリティ（JST 変換等）
