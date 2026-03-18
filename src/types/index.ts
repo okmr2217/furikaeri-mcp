@@ -1,5 +1,6 @@
 export type TaskStatus = "PENDING" | "COMPLETED" | "SKIPPED";
 export type TaskPriority = "HIGH" | "MEDIUM" | "LOW";
+export type TaskReason = "scheduled" | "completed" | "skipped" | "created";
 
 export type Task = {
   title: string;
@@ -7,7 +8,11 @@ export type Task = {
   priority: TaskPriority | null;
   category: string | null;
   memo: string | null;
+  scheduledAt: string | null;
   completedAt: string | null;
+  skippedAt: string | null;
+  createdAt: string;
+  reasons: TaskReason[];
 };
 
 export type TasksResult = {
@@ -15,9 +20,10 @@ export type TasksResult = {
   tasks: Task[];
   summary: {
     total: number;
-    completed: number;
-    pending: number;
-    skipped: number;
+    scheduled: number;
+    completedOnDate: number;
+    skippedOnDate: number;
+    createdOnDate: number;
   };
 };
 
