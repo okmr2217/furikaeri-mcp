@@ -8,33 +8,30 @@
 
 ## Tech Stack
 
-- Next.js 15 (App Router) / React 19 / TypeScript
-- Prisma 6 / Supabase PostgreSQL
-- Better Auth 1.5
-- Tailwind CSS 3 / shadcn / Radix UI / Lucide React
-- Zod 4 / date-fns / Sonner
+- TypeScript / @modelcontextprotocol/sdk
+- Prisma 6 / Supabase PostgreSQL × 3（Yarukoto / Peak Log / 日記）
+- googleapis（Calendar API v3）
+- Zod / date-fns / date-fns-tz
 
 ## コマンド
 
 ```bash
-npm run dev          # 開発サーバー起動
-npm run build        # プロダクションビルド
-npm run lint         # ESLint
-npx tsc --noEmit     # 型チェック
-npx prisma migrate dev   # マイグレーション
-npx prisma studio        # DB GUI
+npm run dev              # 開発サーバー起動（tsx）
+npm run build            # プロダクションビルド（tsc）
+npm run start            # ビルド済みサーバー起動
+npm run lint             # ESLint
+npm run typecheck        # 型チェック（tsc --noEmit）
+npm run prisma:generate  # Prisma クライアント生成（両 DB）
 npx prettier --write .   # フォーマット（printWidth: 120）
 ```
 
 ## コーディングルール
 
 - TypeScript strict mode。`any` 禁止
-- サーバーコンポーネント優先。Client Component は必要最小限に
-- DB アクセスはサーバーのみ（Client から Prisma を呼ばない）
-- すべてのクエリに `userId` フィルタを必ず含める
-- Server Actions は Zod でバリデーション、Better Auth でセッション確認
-- named export を使用（default export は page.tsx のみ）
-- Tailwind CSS のみ使用。カスタム CSS ファイルは作らない
+- すべてのクエリに `userId` フィルタを必ず含める（環境変数から取得）
+- ツールのパラメータは Zod でバリデーション
+- named export を使用
+- 全日付処理は JST（Asia/Tokyo, UTC+9）基準
 
 ## プロダクト前提
 
@@ -78,6 +75,7 @@ npx prettier --write .   # フォーマット（printWidth: 120）
 ## 参照ドキュメント
 
 - @docs/project.md（プロジェクト概要・技術設計・アーキテクチャ）
+- @docs/spec.md（ツール仕様・DB スキーマ・フォルダ構成・実装参照）
 - @docs/handoff.md（現在の実装状態・積み残し・次にやること）
 - @docs/session-log.md（セッション作業記録）
 - @CHANGELOG.md
