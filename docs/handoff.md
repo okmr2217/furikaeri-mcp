@@ -24,10 +24,10 @@
 |---|---|---|
 | `get_tasks` | **完了** | OR 条件横断取得・reasons フィールド付き |
 | `get_peak_logs` | **完了** | Peak Log DB、performedAt JST 変換済み |
-| `get_commits` | 未着手 | GitHub REST API。まず include_stats: false で実装 |
-| `get_calendar_events` | 未着手 | Google Calendar API |
+| `get_commits` | **完了** | GitHub REST API、include_stats 対応 |
+| `get_calendar_events` | **完了** | Google Calendar API、JST オフセット付き |
 | `get_photos_url` | **完了** | Protobuf 手動エンコード、外部依存なし |
-| `get_diary` | 未着手 | 日記アプリ未開発 |
+| `get_diary` | **スタブ完了** | 空の entries を返す（日記アプリ未開発） |
 
 ### Transport
 
@@ -77,5 +77,6 @@
 
 ## 次のセッションで相談したいこと
 
-1. get_tasks / get_peak_logs の動作確認（Supabase セッションプーラー URL で接続確認）
-2. `get_calendar_events` 実装（Google Calendar API 認証セットアップ）
+1. `get_calendar_events` の動作確認（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN を .env に設定して実テスト）
+2. `get_commits` の動作確認
+3. `get_day_summary` 集約ツールの実装

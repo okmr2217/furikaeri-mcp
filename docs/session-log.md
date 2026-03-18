@@ -23,6 +23,26 @@
 
 ---
 
+## 2026-03-19 セッション記録 #5
+
+### やったこと
+- `src/lib/google-calendar.ts` 作成（OAuth2 クライアント、`getCalendarClient()` エクスポート）
+- `src/tools/get-calendar-events.ts` 実装（Zod バリデーション、JST オフセット付き timeMin/timeMax、終日/時間指定イベント区別、summary 算出、エラーハンドリング）
+- `src/tools/get-diary.ts` 実装（スタブ：空の entries 配列を返す）
+- `src/index.ts` に両ツール登録
+- typecheck・lint クリーン、コミット完了
+
+### 技術メモ
+- `googleapis` の `calendar.events.list` は `res.data.items` が `undefined` の場合あり、`?? []` でフォールバック
+- 終日イベント判定: `event.start.date` あり かつ `event.start.dateTime` なし
+- `google.auth.OAuth2` は `client_id`/`client_secret` のみで初期化し、`setCredentials({ refresh_token })` でトークンをセット
+
+### 次にやりたいこと
+- `get_calendar_events` の動作確認（実際の Google Calendar データで確認）
+- `get_commits` の動作確認
+
+---
+
 ## 2026-03-19 セッション記録 #4
 
 ### やったこと
