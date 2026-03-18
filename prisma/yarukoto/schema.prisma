@@ -37,6 +37,8 @@ model Task {
   updatedAt    DateTime
 
   category     Category?   @relation(fields: [categoryId], references: [id])
+
+  @@map("tasks")
 }
 
 model Category {
@@ -46,4 +48,6 @@ model Category {
   color  String?
 
   tasks  Task[]
+
+  @@map("categories")
 }
