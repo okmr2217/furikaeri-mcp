@@ -23,6 +23,32 @@
 
 ---
 
+## 2026-03-19 セッション記録 #8
+
+### やったこと
+- Streamable HTTP transport 対応を実装
+  - `src/mcp-server.ts` に `createServer()` ファクトリを切り出し
+  - `src/index.ts` を `TRANSPORT=stdio|http` 環境変数で分岐するよう変更
+  - HTTP モード: `createMcpExpressApp()` + `StreamableHTTPServerTransport` でセッション管理付き実装
+  - `express` / `@types/express` を依存に追加
+  - `.env.example` に `TRANSPORT` / `PORT` / `GITHUB_TOKEN` を追記
+
+### 技術メモ
+- `createMcpExpressApp({ host: "0.0.0.0" })` は Railway など公開環境でのバインドに必要
+  - localhost 系では DNS rebinding protection が自動有効になるが、`0.0.0.0` では無効（警告が出るのみ）
+- セッション管理: `StreamableHTTPServerTransport` は1インスタンス = 1セッション
+  - `onsessioninitialized` / `onsessionclosed` コールバックで `Map<sessionId, transport>` を管理
+  - `onsessioninitialized: (id) => { transports.set(id, t); }` で `t` を閉じる（クロージャパターン）
+- `Map.set()` / `Map.delete()` の戻り値が `void | Promise<void>` と不一致でエラー → `{ }` で包んで解決
+- claude.ai カスタムコネクターは OAuth か authless の2択 → Phase 2 は authless で実装
+  - 将来的な保護はインフラ層（Cloudflare Access 等）で対応する設計
+
+### 次にやりたいこと
+- Railway デプロイ（`TRANSPORT=http` で起動確認）
+- claude.ai のカスタムコネクター登録・動作確認
+
+---
+
 ## 2026-03-19 セッション記録 #7
 
 ### やったこと

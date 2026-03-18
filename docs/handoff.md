@@ -33,7 +33,7 @@
 ### Transport
 
 - [x] stdio transport（Phase 1 — get_photos_url 登録済み、動作確認済み）
-- [ ] Streamable HTTP transport（Phase 2）
+- [x] Streamable HTTP transport（Phase 2 — `TRANSPORT=http` で起動、セッション管理付き）
 - [ ] Railway デプロイ
 
 ---
@@ -65,10 +65,10 @@
 
 | タスク | 概要 | 優先度 |
 |---|---|---|
-| Streamable HTTP transport 対応 | transport 切り替え | 中 |
-| Railway デプロイ | リモートMCPサーバーとして公開 | 中 |
-| claude.ai コネクター登録 | スマホから利用可能に | 中 |
-| APIキー認証 | 最低限のセキュリティ | 中 |
+| ~~Streamable HTTP transport 対応~~ | **完了** | ~~中~~ |
+| Railway デプロイ | `TRANSPORT=http` で起動、PORT 環境変数で公開 | 中 |
+| claude.ai コネクター登録 | authless で登録（Settings > Connectors） | 中 |
+| インフラ層での保護 | Cloudflare Access / IP 制限等（認証なし運用の場合） | 低 |
 
 ### 将来構想（マルチユーザー対応）
 
@@ -103,4 +103,4 @@
    - `get_calendar_events`（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN を .env に設定）
    - `get_commits`（GitHub PAT で全リポジトリ取得確認）
    - `get_day_summary`（5 ソース並行取得の総合確認）
-2. Phase 2: Streamable HTTP transport への切り替え・Railway デプロイ
+2. Railway デプロイ（`TRANSPORT=http PORT=3000` で起動 → claude.ai コネクター登録）
