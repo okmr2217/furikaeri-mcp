@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/peak-log"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PEAK_LOG_DATABASE_URL")
+}
+
+model Activity {
+  id          String  @id
+  userId      String
+  name        String
+  emoji       String?
+  color       String?
+  sortOrder   Int
+  isArchived  Boolean
+
+  logs        Log[]
+
+  @@map("activities")
+}
+
+model Log {
+  id          String    @id
+  userId      String
+  activityId  String
+  performedAt DateTime
+
+  activity    Activity   @relation(fields: [activityId], references: [id])
+  reflection  Reflection?
+
+  @@map("logs")
+}
+
+model Reflection {
+  id          String   @id
+  userId      String
+  logId       String   @unique
+  excitement  Int?
+  achievement Int?
+  wantAgain   Boolean
+  note        String?
+
+  log         Log      @relation(fields: [logId], references: [id])
+
+  @@map("reflections")
+}
