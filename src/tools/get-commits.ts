@@ -4,7 +4,7 @@ import { getGithubClient } from "../lib/github.js";
 import type { CommitEntry, CommitRepoResult, ErrorResult } from "../types/index.js";
 
 const paramsSchema = {
-  repos: z.array(z.string()).min(1, "repos は1つ以上指定してください"),
+  repos: z.array(z.string()).optional(),
   since: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 形式で指定してください"),
   until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 形式で指定してください"),
   include_stats: z.boolean().optional().default(false),
@@ -17,6 +17,10 @@ type GithubCommitListItem = {
     message: string;
     author: { name: string; date: string } | null;
   };
+};
+
+type GithubRepoItem = {
+  full_name: string;
 };
 
 type GithubCommitDetail = GithubCommitListItem & {
@@ -71,14 +75,21 @@ async function fetchRepoCommits(
   }
 }
 
+async function fetchAllRepos(): Promise<string[]> {
+  const client = getGithubClient();
+  const items = await client.request<GithubRepoItem[]>("/user/repos?per_page=100&sort=pushed");
+  return items.map((r) => r.full_name);
+}
+
 export function registerGetCommits(server: McpServer) {
   server.tool(
     "get_commits",
-    "指定したリポジトリの日付範囲内のコミット履歴を取得する",
+    "指定したリポジトリの日付範囲内のコミット履歴を取得する。repos を省略すると全リポジトリが対象になる",
     paramsSchema,
     async (params) => {
+      const repos = params.repos ?? (await fetchAllRepos());
       const results = await Promise.all(
-        params.repos.map((repo) => fetchRepoCommits(repo, params.since, params.until, params.include_stats)),
+        repos.map((repo) => fetchRepoCommits(repo, params.since, params.until, params.include_stats)),
       );
 
       return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
