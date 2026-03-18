@@ -10,11 +10,13 @@
 
 ### プロジェクト初期化
 
-- [ ] `npm init` + 依存パッケージインストール
-- [ ] `tsconfig.json` 設定
-- [ ] ESLint 設定
-- [ ] `.env` + `.env.example` 作成
-- [ ] `src/index.ts` エントリポイント作成
+- [x] `npm init` + 依存パッケージインストール
+- [x] `tsconfig.json` 設定（strict mode、NodeNext）
+- [x] ESLint 設定（typescript-eslint flat config）
+- [x] `.env.example` 作成
+- [x] `src/index.ts` エントリポイント作成（McpServer + StdioServerTransport）
+- [x] `src/types/index.ts`（全ツールの返却データ型）
+- [x] `src/lib/date-utils.ts`（toJSTDateRange）
 
 ### ツール実装状況
 
@@ -28,7 +30,7 @@
 
 ### Transport
 
-- [ ] stdio transport（Phase 1）
+- [x] stdio transport（Phase 1 — 骨格のみ、ツール未登録）
 - [ ] Streamable HTTP transport（Phase 2）
 - [ ] Railway デプロイ
 
@@ -73,5 +75,5 @@
 
 ## 次のセッションで相談したいこと
 
-1. Yarukoto / Peak Log の DB スキーマをもとに `get_tasks` と `get_peak_logs` のレスポンス形式を決める
-2. プロジェクト初期化 → 最初のツール実装 → stdio 動作確認まで一気に進める
+1. Prisma スキーマ（yarukoto・peak-log）を作成して `prisma:generate` を実行する
+2. `get_tasks`・`get_peak_logs` を実装して stdio 動作確認まで進める
