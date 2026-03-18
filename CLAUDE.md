@@ -1,6 +1,6 @@
 # 振り返りMCP
 
-[プロジェクトの一行説明]。[主要技術スタック]。
+個人の活動データを横断的に取得し、Claudeから自然言語で振り返りができるMCPサーバー。TypeScript + @modelcontextprotocol/sdk。
 
 ---
 
@@ -38,7 +38,11 @@ npx prettier --write .   # フォーマット（printWidth: 120）
 
 ## プロダクト前提
 
-- [重要な設計判断]
+- 個人利用のMCPサーバー（マルチテナント不要）
+- Phase 1: stdio transport（Claude Code から利用）
+- Phase 2: Streamable HTTP transport（Railway デプロイ → claude.ai / スマホから利用）
+- データソースは読み取り専用（書き込みツールは作らない）
+- Claudeが自然言語で振り返りを組み立てるので、ツールは生データを返すだけでよい
 
 ## やらないこと
 
@@ -46,6 +50,8 @@ npx prettier --write .   # フォーマット（printWidth: 120）
 - コードコメント・docstring の追加（変更していないコードへ）
 - エラーハンドリングの過剰追加（起こりえないケースへの対処）
 - リファクタリング・整理（明示的に依頼されていない場合）
+- データの書き込み・更新・削除ツールの実装
+- フロントエンド・UI の実装
 
 ---
 
