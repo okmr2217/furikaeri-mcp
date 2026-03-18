@@ -23,6 +23,27 @@
 
 ---
 
+## 2026-03-19 セッション記録 #6
+
+### やったこと
+- `src/tools/get-day-summary.ts` 実装（集約ツール）
+  - fetchTasks / fetchPeakLogs / fetchDiary / fetchCalendarEvents / fetchPhotosUrl を内部関数として定義
+  - `Promise.allSettled` で 5 ソース並行取得、部分成功に対応
+  - 失敗したソースは `{ error: true, message, code }` 形式で格納
+- `src/index.ts` に registerGetDaySummary を登録
+- typecheck・lint・build（tsc）すべてクリーン、コミット完了
+
+### 技術メモ
+- fetchPhotosUrl は同期関数だが `Promise.resolve()` でラップして allSettled に渡す
+- 既存ツールを改変せず、get-day-summary.ts 内に同等ロジックを直接実装（不要な抽象化を避けるため）
+
+### 次にやりたいこと
+- Claude Code での動作確認（`get_day_summary` を実際に呼び出してテスト）
+- `get_calendar_events` / `get_commits` の実動作確認（Supabase・GitHub・Google Calendar）
+- Phase 2: Streamable HTTP transport への切り替え・Railway デプロイ
+
+---
+
 ## 2026-03-19 セッション記録 #5
 
 ### やったこと

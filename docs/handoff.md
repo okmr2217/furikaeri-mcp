@@ -28,6 +28,7 @@
 | `get_calendar_events` | **完了** | Google Calendar API、JST オフセット付き |
 | `get_photos_url` | **完了** | Protobuf 手動エンコード、外部依存なし |
 | `get_diary` | **スタブ完了** | 空の entries を返す（日記アプリ未開発） |
+| `get_day_summary` | **完了** | 5 ツール Promise.allSettled 並行、部分成功対応 |
 
 ### Transport
 
@@ -77,6 +78,7 @@
 
 ## 次のセッションで相談したいこと
 
-1. `get_calendar_events` の動作確認（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN を .env に設定して実テスト）
-2. `get_commits` の動作確認
-3. `get_day_summary` 集約ツールの実装
+1. `get_day_summary` の動作確認（Claude Code から実際に呼び出してテスト）
+2. `get_calendar_events` の動作確認（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN を .env に設定して実テスト）
+3. `get_commits` の動作確認
+4. Phase 2: Streamable HTTP transport への切り替え・Railway デプロイ
