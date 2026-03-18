@@ -24,7 +24,7 @@
 |---|---|---|
 | `get_tasks` | **完了** | OR 条件横断取得・reasons フィールド付き |
 | `get_peak_logs` | **完了** | Peak Log DB、performedAt JST 変換済み |
-| `get_commits` | **完了** | GitHub REST API、include_stats 対応 |
+| `get_commits` | **完了** | GitHub REST API、include_stats 対応、repos 省略時は全リポジトリ自動取得 |
 | `get_calendar_events` | **完了** | Google Calendar API、JST オフセット付き |
 | `get_photos_url` | **完了** | Protobuf 手動エンコード、外部依存なし |
 | `get_diary` | **スタブ完了** | 空の entries を返す（日記アプリ未開発） |
@@ -41,8 +41,8 @@
 ## 積み残し・注意点
 
 - ローカル開発では Supabase ダイレクト接続（port 5432）が IPv6 必須で到達不可。`.env` をセッションプーラー URL に変更すること
-- `get_diary` は日記アプリ未開発のためスタブ実装となる予定
-- `get_diary` は日記アプリ未開発のためスタブ実装となる予定
+- `get_diary` は日記アプリ未開発のためスタブ実装（空配列を返す）
+- `get_commits` の `repos` 省略時の全リポジトリ取得は 100 件上限（ページネーション未対応）。個人利用では問題なし
 
 ---
 
@@ -52,18 +52,14 @@
 
 | タスク | 概要 | 優先度 |
 |---|---|---|
-| プロジェクト初期化 | npm init, tsconfig, eslint | 高 |
-| `get_tasks` 実装 | Yarukoto DB からタスク取得 | 高 |
-| `get_peak_logs` 実装 | Peak Log DB からログ取得 | 高 |
-| stdio 動作確認 | Claude Code に登録して動作テスト | 高 |
+| 全ツール動作確認 | Supabase・GitHub・Google Calendar 接続テスト | 高 |
 
 ### 中期（Phase 1 続き）
 
 | タスク | 概要 | 優先度 |
 |---|---|---|
-| `get_calendar_events` 実装 | Google Calendar API 連携 | 中 |
-| `get_photos_url` 実装 | データソース決定後 | 低 |
-| `get_diary` 実装 | データソース決定後 | 低 |
+| `get_commits` 全リポジトリ取得ページネーション対応 | 100 件超のリポジトリがある場合 | 低 |
+| `get_diary` 実装 | 日記アプリ開発後 | 低 |
 
 ### 長期（Phase 2: リモート化）
 
@@ -102,7 +98,9 @@
 
 ## 次のセッションで相談したいこと
 
-1. `get_day_summary` の動作確認（Claude Code から実際に呼び出してテスト）
-2. `get_calendar_events` の動作確認（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN を .env に設定して実テスト）
-3. `get_commits` の動作確認
-4. Phase 2: Streamable HTTP transport への切り替え・Railway デプロイ
+1. 全ツールの実動作確認（Supabase・GitHub・Google Calendar それぞれ接続して動作テスト）
+   - `get_tasks` / `get_peak_logs`（Supabase セッションプーラー接続確認）
+   - `get_calendar_events`（GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN を .env に設定）
+   - `get_commits`（GitHub PAT で全リポジトリ取得確認）
+   - `get_day_summary`（5 ソース並行取得の総合確認）
+2. Phase 2: Streamable HTTP transport への切り替え・Railway デプロイ
