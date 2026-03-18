@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getGithubClient } from "../lib/github.js";
-import type { CommitEntry, CommitRepoResult, ErrorResult } from "../types/index.js";
+import type { CommitEntry, CommitRepoResult, Env, ErrorResult } from "../types/index.js";
 
 const paramsSchema = {
   repos: z.array(z.string()).optional(),
@@ -10,7 +10,6 @@ const paramsSchema = {
   include_stats: z.boolean().optional().default(false),
 };
 
-// GitHub API レスポンス型
 type GithubCommitListItem = {
   sha: string;
   commit: {
@@ -29,15 +28,14 @@ type GithubCommitDetail = GithubCommitListItem & {
 };
 
 async function fetchRepoCommits(
+  env: Env,
   repo: string,
   since: string,
   until: string,
   includeStats: boolean,
 ): Promise<CommitRepoResult | ErrorResult> {
   try {
-    const client = getGithubClient();
-
-    // since は当日 00:00:00 JST = 前日 15:00:00 UTC、until は翌日 00:00:00 JST = 当日 15:00:00 UTC
+    const client = getGithubClient(env);
     const sinceISO = `${since}T00:00:00+09:00`;
     const untilISO = `${until}T23:59:59+09:00`;
 
@@ -75,23 +73,22 @@ async function fetchRepoCommits(
   }
 }
 
-async function fetchAllRepos(): Promise<string[]> {
-  const client = getGithubClient();
+async function fetchAllRepos(env: Env): Promise<string[]> {
+  const client = getGithubClient(env);
   const items = await client.request<GithubRepoItem[]>("/user/repos?per_page=100&sort=pushed");
   return items.map((r) => r.full_name);
 }
 
-export function registerGetCommits(server: McpServer) {
+export function registerGetCommits(server: McpServer, env: Env) {
   server.tool(
     "get_commits",
     "指定したリポジトリの日付範囲内のコミット履歴を取得する。repos を省略すると全リポジトリが対象になる",
     paramsSchema,
     async (params) => {
-      const repos = params.repos ?? (await fetchAllRepos());
+      const repos = params.repos ?? (await fetchAllRepos(env));
       const results = await Promise.all(
-        repos.map((repo) => fetchRepoCommits(repo, params.since, params.until, params.include_stats)),
+        repos.map((repo) => fetchRepoCommits(env, repo, params.since, params.until, params.include_stats)),
       );
-
       return { content: [{ type: "text" as const, text: JSON.stringify(results) }] };
     },
   );

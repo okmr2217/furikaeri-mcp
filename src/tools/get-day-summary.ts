@@ -1,51 +1,85 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { prismaYarukoto } from "../lib/prisma-yarukoto.js";
-import { prismaPeakLog } from "../lib/prisma-peak-log.js";
+import { createYarukotoClient, createPeakLogClient } from "../lib/supabase.js";
 import { toJSTDateRange } from "../lib/date-utils.js";
-import { getCalendarClient } from "../lib/google-calendar.js";
+import { fetchCalendarEvents } from "../lib/google-calendar.js";
 import { formatDateForPhotos, generatePhotosSearchUrl } from "../lib/photos-url.js";
-import type { Task, TaskReason } from "../types/index.js";
+import type { Env, Task, TaskReason } from "../types/index.js";
 
 const paramsSchema = {
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 形式で指定してください"),
 };
 
-async function fetchTasks(date: string) {
-  const userId = process.env.YARUKOTO_USER_ID;
-  if (!userId) throw new Error("YARUKOTO_USER_ID が設定されていません");
+type TaskRow = {
+  title: string;
+  memo: string | null;
+  status: "PENDING" | "COMPLETED" | "SKIPPED";
+  priority: "HIGH" | "MEDIUM" | "LOW" | null;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  skippedAt: string | null;
+  createdAt: string;
+  categories: { name: string; color: string | null } | null;
+};
 
+type ReflectionRow = {
+  excitement: number | null;
+  achievement: number | null;
+  wantAgain: boolean;
+  note: string | null;
+};
+
+type LogRow = {
+  performedAt: string;
+  activities: { name: string; emoji: string | null; color: string | null };
+  reflections: ReflectionRow | ReflectionRow[] | null;
+};
+
+async function fetchTasks(env: Env, date: string) {
+  const supabase = createYarukotoClient(env);
+  const userId = env.YARUKOTO_USER_ID;
   const { start, end } = toJSTDateRange(date);
-  const rows = await prismaYarukoto.task.findMany({
-    where: {
-      userId,
-      OR: [
-        { scheduledAt: new Date(date) },
-        { completedAt: { gte: start, lt: end } },
-        { skippedAt: { gte: start, lt: end } },
-        { createdAt: { gte: start, lt: end } },
-      ],
-    },
-    include: { category: true },
-    orderBy: { displayOrder: "asc" },
-  });
+  const startISO = start.toISOString();
+  const endISO = end.toISOString();
 
-  const tasks: Task[] = rows.map((t) => {
+  const { data: rows, error } = await supabase
+    .from("tasks")
+    .select("*, categories(*)")
+    .eq("userId", userId)
+    .or(
+      `scheduledAt.eq.${date},` +
+      `and(completedAt.gte.${startISO},completedAt.lt.${endISO}),` +
+      `and(skippedAt.gte.${startISO},skippedAt.lt.${endISO}),` +
+      `and(createdAt.gte.${startISO},createdAt.lt.${endISO})`,
+    )
+    .order("displayOrder", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const tasks: Task[] = (rows ?? [] as TaskRow[]).map((t: TaskRow) => {
     const reasons: TaskReason[] = [];
-    if (t.scheduledAt?.toISOString().slice(0, 10) === date) reasons.push("scheduled");
-    if (t.completedAt && t.completedAt >= start && t.completedAt < end) reasons.push("completed");
-    if (t.skippedAt && t.skippedAt >= start && t.skippedAt < end) reasons.push("skipped");
-    if (t.createdAt >= start && t.createdAt < end) reasons.push("created");
+    if (t.scheduledAt === date) reasons.push("scheduled");
+    if (t.completedAt) {
+      const completedAt = new Date(t.completedAt);
+      if (completedAt >= start && completedAt < end) reasons.push("completed");
+    }
+    if (t.skippedAt) {
+      const skippedAt = new Date(t.skippedAt);
+      if (skippedAt >= start && skippedAt < end) reasons.push("skipped");
+    }
+    const createdAt = new Date(t.createdAt);
+    if (createdAt >= start && createdAt < end) reasons.push("created");
+
     return {
       title: t.title,
       status: t.status,
       priority: t.priority,
-      category: t.category?.name ?? null,
+      category: t.categories?.name ?? null,
       memo: t.memo,
-      scheduledAt: t.scheduledAt ? t.scheduledAt.toISOString().slice(0, 10) : null,
-      completedAt: t.completedAt ? t.completedAt.toISOString() : null,
-      skippedAt: t.skippedAt ? t.skippedAt.toISOString() : null,
-      createdAt: t.createdAt.toISOString(),
+      scheduledAt: t.scheduledAt,
+      completedAt: t.completedAt,
+      skippedAt: t.skippedAt,
+      createdAt: t.createdAt,
       reasons,
     };
   });
@@ -63,68 +97,52 @@ async function fetchTasks(date: string) {
   };
 }
 
-async function fetchPeakLogs(date: string) {
-  const userId = process.env.PEAK_LOG_USER_ID;
-  if (!userId) throw new Error("PEAK_LOG_USER_ID が設定されていません");
-
+async function fetchPeakLogs(env: Env, date: string) {
+  const supabase = createPeakLogClient(env);
+  const userId = env.PEAK_LOG_USER_ID;
   const { start, end } = toJSTDateRange(date);
-  const rows = await prismaPeakLog.log.findMany({
-    where: {
-      userId,
-      performedAt: { gte: start, lt: end },
-    },
-    include: { activity: true, reflection: true },
-    orderBy: { performedAt: "asc" },
+
+  const { data: rows, error } = await supabase
+    .from("logs")
+    .select("*, activities(*), reflections(*)")
+    .eq("userId", userId)
+    .gte("performedAt", start.toISOString())
+    .lt("performedAt", end.toISOString())
+    .order("performedAt", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const logs = (rows ?? [] as LogRow[]).map((row: LogRow) => {
+    const reflectionRaw = row.reflections;
+    const reflection: ReflectionRow | null = Array.isArray(reflectionRaw)
+      ? (reflectionRaw.length > 0 ? reflectionRaw[0] : null)
+      : (reflectionRaw ?? null);
+
+    return {
+      activity: { name: row.activities.name, emoji: row.activities.emoji, color: row.activities.color },
+      performedAt: row.performedAt,
+      reflection: reflection
+        ? { excitement: reflection.excitement, achievement: reflection.achievement, wantAgain: reflection.wantAgain, note: reflection.note }
+        : null,
+    };
   });
 
-  const logs = rows.map((row) => ({
-    activity: {
-      name: row.activity.name,
-      emoji: row.activity.emoji,
-      color: row.activity.color,
-    },
-    performedAt: row.performedAt.toISOString(),
-    reflection: row.reflection
-      ? {
-          excitement: row.reflection.excitement,
-          achievement: row.reflection.achievement,
-          wantAgain: row.reflection.wantAgain,
-          note: row.reflection.note,
-        }
-      : null,
-  }));
-
   const withReflection = logs.filter((l) => l.reflection !== null).length;
-  const excitementValues = logs
-    .filter((l) => l.reflection?.excitement != null)
-    .map((l) => l.reflection!.excitement as number);
-  const averageExcitement =
-    excitementValues.length > 0
-      ? Math.round((excitementValues.reduce((a, b) => a + b, 0) / excitementValues.length) * 10) / 10
-      : null;
+  const excitementValues = logs.filter((l) => l.reflection?.excitement != null).map((l) => l.reflection!.excitement as number);
+  const averageExcitement = excitementValues.length > 0
+    ? Math.round((excitementValues.reduce((a, b) => a + b, 0) / excitementValues.length) * 10) / 10
+    : null;
 
-  return {
-    date,
-    logs,
-    summary: { totalLogs: logs.length, withReflection, averageExcitement },
-  };
+  return { date, logs, summary: { totalLogs: logs.length, withReflection, averageExcitement } };
 }
 
 async function fetchDiary(date: string) {
   return { date, entries: [] as unknown[] };
 }
 
-async function fetchCalendarEvents(date: string) {
-  const calendar = getCalendarClient();
-  const res = await calendar.events.list({
-    calendarId: "primary",
-    timeMin: `${date}T00:00:00+09:00`,
-    timeMax: `${date}T23:59:59+09:00`,
-    singleEvents: true,
-    orderBy: "startTime",
-  });
-
-  const items = res.data.items ?? [];
+async function fetchCalendar(env: Env, date: string) {
+  const response = await fetchCalendarEvents(env, date);
+  const items = response.items ?? [];
   const events = items.map((event) => {
     const isAllDay = Boolean(event.start?.date && !event.start?.dateTime);
     return {
@@ -136,13 +154,8 @@ async function fetchCalendarEvents(date: string) {
       isAllDay,
     };
   });
-
   const allDayEvents = events.filter((e) => e.isAllDay).length;
-  return {
-    date,
-    events,
-    summary: { totalEvents: events.length, allDayEvents, timedEvents: events.length - allDayEvents },
-  };
+  return { date, events, summary: { totalEvents: events.length, allDayEvents, timedEvents: events.length - allDayEvents } };
 }
 
 function fetchPhotosUrl(date: string) {
@@ -151,31 +164,36 @@ function fetchPhotosUrl(date: string) {
   return { date, searchQuery, url };
 }
 
-export function registerGetDaySummary(server: McpServer) {
-  server.tool("get_day_summary", "1日分のデータ（タスク・ピークログ・日記・カレンダー・写真URL）を一括取得する", paramsSchema, async ({ date }) => {
-    const [tasksResult, peakLogsResult, diaryResult, calendarResult, photosResult] = await Promise.allSettled([
-      fetchTasks(date),
-      fetchPeakLogs(date),
-      fetchDiary(date),
-      fetchCalendarEvents(date),
-      Promise.resolve(fetchPhotosUrl(date)),
-    ]);
+export function registerGetDaySummary(server: McpServer, env: Env) {
+  server.tool(
+    "get_day_summary",
+    "1日分のデータ（タスク・ピークログ・日記・カレンダー・写真URL）を一括取得する",
+    paramsSchema,
+    async ({ date }) => {
+      const [tasksResult, peakLogsResult, diaryResult, calendarResult, photosResult] = await Promise.allSettled([
+        fetchTasks(env, date),
+        fetchPeakLogs(env, date),
+        fetchDiary(date),
+        fetchCalendar(env, date),
+        Promise.resolve(fetchPhotosUrl(date)),
+      ]);
 
-    const resolveResult = <T>(result: PromiseSettledResult<T>, code: string) => {
-      if (result.status === "fulfilled") return result.value;
-      const message = result.reason instanceof Error ? result.reason.message : "不明なエラー";
-      return { error: true, message, code };
-    };
+      const resolveResult = <T>(result: PromiseSettledResult<T>, code: string) => {
+        if (result.status === "fulfilled") return result.value;
+        const message = result.reason instanceof Error ? result.reason.message : "不明なエラー";
+        return { error: true, message, code };
+      };
 
-    const result = {
-      date,
-      tasks: resolveResult(tasksResult, "TASKS_ERROR"),
-      peakLogs: resolveResult(peakLogsResult, "PEAK_LOGS_ERROR"),
-      diary: resolveResult(diaryResult, "DIARY_ERROR"),
-      calendarEvents: resolveResult(calendarResult, "CALENDAR_ERROR"),
-      photosUrl: resolveResult(photosResult, "PHOTOS_ERROR"),
-    };
+      const result = {
+        date,
+        tasks: resolveResult(tasksResult, "TASKS_ERROR"),
+        peakLogs: resolveResult(peakLogsResult, "PEAK_LOGS_ERROR"),
+        diary: resolveResult(diaryResult, "DIARY_ERROR"),
+        calendarEvents: resolveResult(calendarResult, "CALENDAR_ERROR"),
+        photosUrl: resolveResult(photosResult, "PHOTOS_ERROR"),
+      };
 
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
-  });
+      return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+    },
+  );
 }

@@ -1,75 +1,46 @@
-import "dotenv/config";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
-import { randomUUID } from "node:crypto";
-import { createServer } from "./mcp-server.js";
+import OAuthProvider from "@cloudflare/workers-oauth-provider";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpAgent } from "agents/mcp";
+import { GitHubHandler } from "./github-handler.js";
+import type { Props } from "./utils.js";
+import type { Env } from "./types/index.js";
+import { registerGetTasks } from "./tools/get-tasks.js";
+import { registerGetPeakLogs } from "./tools/get-peak-logs.js";
+import { registerGetCommits } from "./tools/get-commits.js";
+import { registerGetDiary } from "./tools/get-diary.js";
+import { registerGetCalendarEvents } from "./tools/get-calendar-events.js";
+import { registerGetPhotosUrl } from "./tools/get-photos-url.js";
+import { registerGetDaySummary } from "./tools/get-day-summary.js";
 
-const transportMode = process.env.TRANSPORT ?? "stdio";
+// アクセスを許可する GitHub ユーザー名を設定する
+const ALLOWED_USERNAMES = new Set<string>([
+  // "your-github-username",
+]);
 
-if (transportMode === "http") {
-  const port = parseInt(process.env.PORT ?? "3000", 10);
-  const transports = new Map<string, StreamableHTTPServerTransport>();
+export class FurikaeriMCP extends McpAgent<Env, Record<string, never>, Props> {
+  server = new McpServer({ name: "furikaeri-mcp", version: "0.1.0" });
 
-  const app = createMcpExpressApp({ host: "0.0.0.0" });
-
-  app.post("/mcp", async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"];
-
-    if (sessionId) {
-      const t = transports.get(sessionId as string);
-      if (!t) {
-        res.status(404).end();
-        return;
-      }
-      await t.handleRequest(req, res, req.body);
+  async init() {
+    if (!ALLOWED_USERNAMES.has(this.props!.login)) {
       return;
     }
 
-    // 新規セッション
-    const t = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (id) => { transports.set(id, t); },
-      onsessionclosed: (id) => { transports.delete(id); },
-    });
-    const server = createServer();
-    await server.connect(t);
-    await t.handleRequest(req, res, req.body);
-  });
-
-  app.get("/mcp", async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    if (!sessionId) {
-      res.status(400).end();
-      return;
-    }
-    const t = transports.get(sessionId);
-    if (!t) {
-      res.status(404).end();
-      return;
-    }
-    await t.handleRequest(req, res);
-  });
-
-  app.delete("/mcp", async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    if (!sessionId) {
-      res.status(400).end();
-      return;
-    }
-    const t = transports.get(sessionId);
-    if (!t) {
-      res.status(404).end();
-      return;
-    }
-    await t.handleRequest(req, res);
-  });
-
-  app.listen(port, "0.0.0.0", () => {
-    console.log(`furikaeri-mcp listening on port ${port}`);
-  });
-} else {
-  const server = createServer();
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+    const env = this.env;
+    registerGetTasks(this.server, env);
+    registerGetPeakLogs(this.server, env);
+    registerGetCommits(this.server, env);
+    registerGetDiary(this.server);
+    registerGetCalendarEvents(this.server, env);
+    registerGetPhotosUrl(this.server);
+    registerGetDaySummary(this.server, env);
+  }
 }
+
+export default new OAuthProvider({
+  apiHandler: FurikaeriMCP.serve("/mcp"),
+  apiRoute: "/mcp",
+  authorizeEndpoint: "/authorize",
+  clientRegistrationEndpoint: "/register",
+  defaultHandler: GitHubHandler as ExportedHandler,
+  tokenEndpoint: "/token",
+});

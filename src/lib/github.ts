@@ -1,8 +1,9 @@
+import type { Env } from "../types/index.js";
+
 const BASE_URL = "https://api.github.com";
 
-export function getGithubClient() {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) throw new Error("GITHUB_TOKEN が設定されていません");
+export function getGithubClient(env: Env) {
+  const token = env.GITHUB_TOKEN;
 
   async function request<T>(path: string): Promise<T> {
     const res = await fetch(`${BASE_URL}${path}`, {

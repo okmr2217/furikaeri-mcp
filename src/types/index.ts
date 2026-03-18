@@ -1,3 +1,33 @@
+// Cloudflare Workers Env bindings
+export interface Env {
+  // Cloudflare bindings
+  OAUTH_KV: KVNamespace;
+  MCP_OBJECT: DurableObjectNamespace;
+
+  // GitHub OAuth（MCP 認証用）
+  GITHUB_CLIENT_ID: string;
+  GITHUB_CLIENT_SECRET: string;
+  COOKIE_ENCRYPTION_KEY: string;
+
+  // GitHub PAT（コミット取得用）
+  GITHUB_TOKEN: string;
+
+  // Yarukoto（Supabase）
+  YARUKOTO_SUPABASE_URL: string;
+  YARUKOTO_SUPABASE_SERVICE_KEY: string;
+  YARUKOTO_USER_ID: string;
+
+  // Peak Log（Supabase）
+  PEAK_LOG_SUPABASE_URL: string;
+  PEAK_LOG_SUPABASE_SERVICE_KEY: string;
+  PEAK_LOG_USER_ID: string;
+
+  // Google Calendar API
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_REFRESH_TOKEN: string;
+}
+
 export type TaskStatus = "PENDING" | "COMPLETED" | "SKIPPED";
 export type TaskPriority = "HIGH" | "MEDIUM" | "LOW";
 export type TaskReason = "scheduled" | "completed" | "skipped" | "created";

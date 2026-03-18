@@ -11,11 +11,7 @@ export function registerGetPhotosUrl(server: McpServer): void {
   server.tool("get_photos_url", "Google Photos の検索 URL を生成する", paramsSchema, async ({ date }) => {
     const searchQuery = formatDateForPhotos(date);
     const url = generatePhotosSearchUrl(searchQuery);
-
     const result: PhotosUrlResult = { date, searchQuery, url };
-
-    return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-    };
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   });
 }

@@ -1,0 +1,23 @@
+name = "furikaeri-mcp"
+main = "src/index.ts"
+compatibility_date = "2025-03-10"
+compatibility_flags = ["nodejs_compat"]
+
+[migrations]
+tag = "v1"
+new_sqlite_classes = ["FurikaeriMCP"]
+
+[durable_objects]
+bindings = [
+  { class_name = "FurikaeriMCP", name = "MCP_OBJECT" }
+]
+
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "<Add-KV-ID-here>"
+
+[observability]
+enabled = true
+
+[dev]
+port = 8788
