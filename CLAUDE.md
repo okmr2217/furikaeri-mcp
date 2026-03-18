@@ -1,4 +1,4 @@
-# [プロジェクト名]
+# 振り返りMCP
 
 [プロジェクトの一行説明]。[主要技術スタック]。
 
@@ -8,24 +8,33 @@
 
 ## Tech Stack
 
-- [フレームワーク]
-- [DB / ORM]
-- [認証]
-- [スタイリング]
+- Next.js 15 (App Router) / React 19 / TypeScript
+- Prisma 6 / Supabase PostgreSQL
+- Better Auth 1.5
+- Tailwind CSS 3 / shadcn / Radix UI / Lucide React
+- Zod 4 / date-fns / Sonner
 
 ## コマンド
 
-\`\`\`bash
-npm run dev
-npm run build
-npm run lint
-npm run typecheck
-\`\`\`
+```bash
+npm run dev          # 開発サーバー起動
+npm run build        # プロダクションビルド
+npm run lint         # ESLint
+npx tsc --noEmit     # 型チェック
+npx prisma migrate dev   # マイグレーション
+npx prisma studio        # DB GUI
+npx prettier --write .   # フォーマット（printWidth: 120）
+```
 
 ## コーディングルール
 
 - TypeScript strict mode。`any` 禁止
-- [プロジェクト固有のルール]
+- サーバーコンポーネント優先。Client Component は必要最小限に
+- DB アクセスはサーバーのみ（Client から Prisma を呼ばない）
+- すべてのクエリに `userId` フィルタを必ず含める
+- Server Actions は Zod でバリデーション、Better Auth でセッション確認
+- named export を使用（default export は page.tsx のみ）
+- Tailwind CSS のみ使用。カスタム CSS ファイルは作らない
 
 ## プロダクト前提
 
