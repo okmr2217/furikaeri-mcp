@@ -98,6 +98,20 @@ export type DaySummaryResult = {
   photosUrl: string;
 };
 
+export type CommitEntry = {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+  stats?: { additions: number; deletions: number };
+  files?: string[];
+};
+
+export type CommitRepoResult = {
+  repo: string;
+  commits: CommitEntry[];
+};
+
 export type ErrorResult = {
   error: true;
   message: string;
