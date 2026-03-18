@@ -23,6 +23,31 @@
 
 ---
 
+## 2026-03-19 セッション記録 #4
+
+### やったこと
+- `prisma/peak-log/schema.prisma` 作成（Activity・Log・Reflection モデル、`@@map` でテーブル名明示）
+- `npx prisma generate --schema=prisma/peak-log/schema.prisma` 実行（output: `node_modules/.prisma/peak-log`）
+- `src/lib/prisma-peak-log.ts` 作成（Peak Log 用 PrismaClient）
+- `src/tools/get-peak-logs.ts` 実装（performedAt の JST 日付範囲フィルター、activity + reflection を include、summary 算出）
+- `src/index.ts` に get_peak_logs を登録
+
+### 改善案（未対応）
+- なし
+
+### 失敗したアプローチ
+- なし
+
+### 技術メモ
+- `averageExcitement` は excitement が null でないログのみ対象にして計算（小数点1桁に丸め）
+- `prisma:generate` スクリプトは既に両スキーマを含む構成になっていた
+
+### 次にやりたいこと
+- get_peak_logs の動作確認（Supabase セッションプーラーで接続確認）
+- get_calendar_events の実装（Google Calendar API）
+
+---
+
 ## 2026-03-18 セッション記録 #3
 
 ### やったこと
