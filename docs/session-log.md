@@ -23,6 +23,34 @@
 
 ---
 
+## 2026-03-18 セッション記録 #2
+
+### やったこと
+- `src/lib/photos-url.ts` 実装（formatDateForPhotos / encodeVarint / generatePhotosSearchUrl）
+- `src/tools/get-photos-url.ts` 実装（Zod バリデーション付き、PhotosUrlResult 返却）
+- `src/index.ts` に get_photos_url を登録
+- `.env` ファイル作成（空値のテンプレート）
+- `claude mcp add` で Claude Code に MCP を登録
+- 動作確認: get_photos_url が正常動作することを確認
+
+### 改善案（未対応）
+- なし
+
+### 失敗したアプローチ
+- なし
+
+### 技術メモ
+- Google Photos URL 生成は Protobuf を手動エンコード（Field 1: クエリ, Field 4: 内部メッセージ, Field 5: タイムスタンプms, Field 7: 固定値3）
+- `encodeVarint` は 7 ビットずつ分割して MSB を continuation bit として使う標準実装
+- `claude mcp add furikaeri-mcp -- npx tsx src/index.ts` で登録、セッション再起動後に有効化
+
+### 次にやりたいこと
+- Prisma スキーマ作成（prisma/yarukoto/schema.prisma、prisma/peak-log/schema.prisma）
+- get_tasks ツール実装（Yarukoto DB）
+- get_peak_logs ツール実装（Peak Log DB）
+
+---
+
 ## 2026-03-18 セッション記録
 
 ### やったこと

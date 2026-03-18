@@ -25,12 +25,12 @@
 | `get_tasks` | 未着手 | Yarukoto DB |
 | `get_peak_logs` | 未着手 | Peak Log DB |
 | `get_calendar_events` | 未着手 | Google Calendar API |
-| `get_photos_url` | 未着手 | データソース未定 |
-| `get_diary` | 未着手 | データソース未定 |
+| `get_photos_url` | **完了** | Protobuf 手動エンコード、外部依存なし |
+| `get_diary` | 未着手 | 日記アプリ未開発 |
 
 ### Transport
 
-- [x] stdio transport（Phase 1 — 骨格のみ、ツール未登録）
+- [x] stdio transport（Phase 1 — get_photos_url 登録済み、動作確認済み）
 - [ ] Streamable HTTP transport（Phase 2）
 - [ ] Railway デプロイ
 
@@ -39,7 +39,7 @@
 ## 積み残し・注意点
 
 - Yarukoto / Peak Log の DB スキーマを確認してからツール実装に入る
-- `get_photos_url` と `get_diary` のデータソースが未確定
+- `get_diary` は日記アプリ未開発のためスタブ実装となる予定
 
 ---
 
@@ -76,4 +76,4 @@
 ## 次のセッションで相談したいこと
 
 1. Prisma スキーマ（yarukoto・peak-log）を作成して `prisma:generate` を実行する
-2. `get_tasks`・`get_peak_logs` を実装して stdio 動作確認まで進める
+2. `get_tasks`・`get_peak_logs` を実装して動作確認まで進める
