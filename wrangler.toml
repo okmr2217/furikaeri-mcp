@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2025-03-10"
 compatibility_flags = ["nodejs_compat"]
 
-[migrations]
+[[migrations]]
 tag = "v1"
 new_sqlite_classes = ["FurikaeriMCP"]
 
@@ -14,7 +14,7 @@ bindings = [
 
 [[kv_namespaces]]
 binding = "OAUTH_KV"
-id = "<Add-KV-ID-here>"
+id = "2b8d1074a09a4172908f3bd096bf40b6"
 
 [observability]
 enabled = true

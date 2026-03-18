@@ -23,6 +23,36 @@
 
 ---
 
+## 2026-03-19 セッション記録 #10
+
+### やったこと
+- ローカル開発環境のセットアップを完了
+  - Cloudflare KV namespace 作成（OAUTH_KV）・`wrangler.toml` に ID 反映
+  - `wrangler.toml` の `[[migrations]]` 構文エラーを修正（`[migrations]` → `[[migrations]]`）
+  - GitHub OAuth App 作成（ローカル用）・`ALLOWED_USERNAMES` に `okmr2217` を追加
+  - `.dev.vars` を作成し全 secrets を設定（`.env` から移植 + Supabase service key 追加）
+  - Supabase 接続: 接続文字列（Prisma 用）からプロジェクト URL + service_role key 方式に移行
+  - `wrangler dev` 起動・MCP Inspector で GitHub OAuth フロー動作確認
+- `get_commits` の 403 エラーを修正
+  - 原因: Cloudflare Workers の `fetch()` は `User-Agent` を自動付与しない
+  - 対処: `src/lib/github.ts` に `"User-Agent": "furikaeri-mcp"` を追加
+  - classic PAT（`ghp_`）を新規発行（fine-grained PAT では `/user/repos` が 403 になるため）
+- プロジェクト整理
+  - `.wrangler/` を `.gitignore` に追加
+  - `.env` / `.env.example` を削除（Workers 移行で不要に）
+
+### 技術メモ
+- Cloudflare Workers の `fetch()` は User-Agent を付与しない。GitHub API は User-Agent 必須なので `"User-Agent": "furikaeri-mcp"` を明示する必要がある
+- fine-grained PAT は `/user/repos`（全リポジトリ一覧）に 403 を返す。`repos` 省略時の全リポジトリ取得には classic PAT（`repo` スコープ）が必要
+- Supabase URL は接続文字列の `postgres.[project-id]` からプロジェクト ID を取り出して `https://[project-id].supabase.co` で構成できる
+
+### 次にやりたいこと
+- 残りのツール（`get_tasks` / `get_peak_logs` / `get_calendar_events`）の動作確認
+- `wrangler deploy` で本番デプロイ
+- claude.ai コネクター / Claude Code への登録
+
+---
+
 ## 2026-03-19 セッション記録 #9
 
 ### やったこと

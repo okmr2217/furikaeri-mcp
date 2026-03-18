@@ -14,7 +14,7 @@ import { registerGetDaySummary } from "./tools/get-day-summary.js";
 
 // アクセスを許可する GitHub ユーザー名を設定する
 const ALLOWED_USERNAMES = new Set<string>([
-  // "your-github-username",
+  "okmr2217",
 ]);
 
 export class FurikaeriMCP extends McpAgent<Env, Record<string, never>, Props> {

@@ -10,15 +10,16 @@
 
 ### アーキテクチャ
 
-**Cloudflare Workers + GitHub OAuth** 構成への全面移行完了。
+**Cloudflare Workers + GitHub OAuth** 構成への全面移行完了。ローカル開発環境（`wrangler dev`）での動作確認済み。
 
 | 項目 | 状態 |
 |---|---|
 | Workers エントリポイント（McpAgent + OAuthProvider） | **完了** |
-| GitHub OAuth フロー（workers-oauth-provider + KV） | **実装完了（未テスト）** |
+| GitHub OAuth フロー（workers-oauth-provider + KV） | **完了・動作確認済み** |
 | Supabase JS Client への移行（Prisma 削除） | **完了** |
 | 全ツール Workers 対応 | **完了** |
-| wrangler.toml 設定 | **作成済み（KV ID 未設定）** |
+| wrangler.toml 設定（KV ID 設定済み） | **完了** |
+| ローカル .dev.vars 設定 | **完了** |
 
 ### ツール実装状況
 
@@ -26,7 +27,7 @@
 |---|---|---|
 | `get_tasks` | **完了** | Supabase PostgREST、OR 条件横断取得 |
 | `get_peak_logs` | **完了** | Supabase PostgREST、reflections リレーション |
-| `get_commits` | **完了** | GitHub REST API、env 経由に変更済み |
+| `get_commits` | **完了・動作確認済み** | GitHub REST API、User-Agent ヘッダー追加済み |
 | `get_calendar_events` | **完了** | fetch ベースの Google Calendar REST API |
 | `get_photos_url` | **完了** | Uint8Array / btoa（Workers 互換） |
 | `get_diary` | **スタブ完了** | 空配列を返す（日記アプリ未開発） |
@@ -41,39 +42,34 @@
 
 ## 積み残し・注意点
 
-### デプロイ前に必要な作業（ユーザーが手動で実施）
+### 次にやること
 
-1. **KV namespace 作成**
+1. **残りツールの動作確認**（`wrangler dev` 環境で MCP Inspector から）
+   - `get_tasks`、`get_peak_logs`、`get_calendar_events` を実際のデータで確認
+
+2. **本番デプロイ**
    ```bash
-   wrangler kv:namespace create "OAUTH_KV"
-   ```
-   出力された ID を `wrangler.toml` の `<Add-KV-ID-here>` に設定する。
-
-2. **GitHub OAuth App 作成**（GitHub の Settings > Developer settings > OAuth Apps）
-   - ローカル用: Homepage `http://localhost:8788`, Callback `http://localhost:8788/callback`
-   - 本番用: Homepage `https://furikaeri-mcp.<account>.workers.dev`, Callback `https://furikaeri-mcp.<account>.workers.dev/callback`
-
-3. **ALLOWED_USERNAMES に自分の GitHub ユーザー名を追記**（`src/index.ts`）
-   ```typescript
-   const ALLOWED_USERNAMES = new Set<string>([
-     "your-github-username",  // ← ここに追記
-   ]);
-   ```
-
-4. **`.dev.vars` 作成**（`.dev.vars.example` をコピーして値を設定）
-
-5. **ローカル動作確認**
-   ```bash
-   wrangler dev
-   npx @modelcontextprotocol/inspector  # 接続先: http://localhost:8788/mcp
-   ```
-
-6. **本番 secrets 登録 + デプロイ**
-   ```bash
+   # 本番 secrets 登録
    wrangler secret put GITHUB_CLIENT_ID
-   # ... 他 secrets も同様
+   wrangler secret put GITHUB_CLIENT_SECRET
+   wrangler secret put COOKIE_ENCRYPTION_KEY
+   wrangler secret put GITHUB_TOKEN
+   wrangler secret put YARUKOTO_SUPABASE_URL
+   wrangler secret put YARUKOTO_SUPABASE_SERVICE_KEY
+   wrangler secret put YARUKOTO_USER_ID
+   wrangler secret put PEAK_LOG_SUPABASE_URL
+   wrangler secret put PEAK_LOG_SUPABASE_SERVICE_KEY
+   wrangler secret put PEAK_LOG_USER_ID
+   wrangler secret put GOOGLE_CLIENT_ID
+   wrangler secret put GOOGLE_CLIENT_SECRET
+   wrangler secret put GOOGLE_REFRESH_TOKEN
+
    wrangler deploy
    ```
+
+3. **Claude への登録**
+   - Claude.ai: Settings > Connectors > Add custom connector → `https://furikaeri-mcp.<account>.workers.dev/mcp`
+   - Claude Code: `claude mcp add furikaeri --transport http https://furikaeri-mcp.<account>.workers.dev/mcp`
 
 ### その他の注意点
 
@@ -81,11 +77,12 @@
 - `get_commits` の全リポジトリ取得は 100 件上限（個人利用では問題なし）
 - `@modelcontextprotocol/sdk` は `1.26.0` に固定（`agents@0.5.0` の依存に合わせるため）
 - Supabase PostgREST の OR + AND 条件: `.or("and(col.gte.X,col.lt.Y),...")` 構文を使用
+- GitHub PAT は classic（`ghp_`）が必須。fine-grained PAT では `/user/repos` が 403 になる
+- Cloudflare Workers の `fetch()` は `User-Agent` を自動付与しない → `getGithubClient` で明示設定済み
 
 ---
 
 ## 次のセッションで相談したいこと
 
-1. KV 作成・OAuth App 作成・secrets 設定 → `wrangler dev` でローカル動作確認
-2. 全ツールの実データ接続テスト（Supabase・GitHub・Google Calendar）
-3. `wrangler deploy` で本番デプロイ → claude.ai コネクター登録
+1. 残りツール（get_tasks / get_peak_logs / get_calendar_events）の実データ接続テスト
+2. `wrangler deploy` で本番デプロイ → claude.ai コネクター / Claude Code 登録
