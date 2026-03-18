@@ -6,6 +6,8 @@
 
 データの整形・要約・振り返りの構成はClaude側が行う。このサーバーは生データを返すだけ。
 
+**Cloudflare Workers 上で動作。GitHub OAuth で認証。**
+
 ---
 
 ## ツール一覧
@@ -26,9 +28,12 @@
 
 ### 必要なもの
 
-- Node.js 20以上
-- Supabase接続URL × 2（Yarukoto / Peak Log）
-- GitHub Personal Access Token（PAT）
+- [Node.js](https://nodejs.org/) 20 以上（ローカル開発用）
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) (`npm i -g wrangler`)
+- Cloudflare アカウント
+- Supabase Project × 2（Yarukoto / Peak Log）
+- GitHub Personal Access Token（PAT）— コミット取得用
+- GitHub OAuth App × 2（ローカル用・本番用）— MCP 認証用
 - Google Calendar API の OAuth 2.0 認証情報
 
 ### 1. インストール
@@ -37,38 +42,69 @@
 git clone https://github.com/your-username/furikaeri-mcp.git
 cd furikaeri-mcp
 npm install
-npm run prisma:generate
 ```
 
-### 2. 環境変数の設定
-
-`.env.example` をコピーして `.env` を作成し、各値を設定する。
+### 2. Cloudflare KV namespace の作成
 
 ```bash
-cp .env.example .env
+wrangler kv:namespace create "OAUTH_KV"
+```
+
+出力された ID を `wrangler.toml` の `<Add-KV-ID-here>` に設定する。
+
+### 3. GitHub OAuth App の作成
+
+[GitHub > Settings > Developer settings > OAuth Apps](https://github.com/settings/developers) で2つ作成する。
+
+**ローカル開発用:**
+- Homepage URL: `http://localhost:8788`
+- Authorization callback URL: `http://localhost:8788/callback`
+
+**本番用:**
+- Homepage URL: `https://furikaeri-mcp.<account>.workers.dev`
+- Authorization callback URL: `https://furikaeri-mcp.<account>.workers.dev/callback`
+
+### 4. アクセス許可ユーザーの設定
+
+`src/index.ts` の `ALLOWED_USERNAMES` に自分の GitHub ユーザー名を追加する。
+
+```typescript
+const ALLOWED_USERNAMES = new Set<string>([
+  "your-github-username",
+]);
+```
+
+### 5. ローカル開発用 secrets の設定
+
+`.dev.vars.example` をコピーして `.dev.vars` を作成し、各値を入力する。
+
+```bash
+cp .dev.vars.example .dev.vars
 ```
 
 ```env
-# Yarukoto DB（Supabase接続URL）
-YARUKOTO_DATABASE_URL=postgresql://...
+# GitHub OAuth App（ローカル用の Client ID / Secret）
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+COOKIE_ENCRYPTION_KEY=   # openssl rand -hex 32 で生成
 
-# Peak Log DB（Supabase接続URL）
-PEAK_LOG_DATABASE_URL=postgresql://...
-
-# 日記アプリ DB（後日追加）
-DIARY_DATABASE_URL=postgresql://...
-
-# Google Calendar API
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REFRESH_TOKEN=...
-
-# GitHub Personal Access Token
+# GitHub PAT（コミット取得用）
 GITHUB_TOKEN=ghp_...
 
-# 各アプリでの自分のユーザーID
-YARUKOTO_USER_ID=cuid_xxx
-PEAK_LOG_USER_ID=cuid_yyy
+# Yarukoto（Supabase）
+YARUKOTO_SUPABASE_URL=https://xxx.supabase.co
+YARUKOTO_SUPABASE_SERVICE_KEY=eyJ...
+YARUKOTO_USER_ID=
+
+# Peak Log（Supabase）
+PEAK_LOG_SUPABASE_URL=https://yyy.supabase.co
+PEAK_LOG_SUPABASE_SERVICE_KEY=eyJ...
+PEAK_LOG_USER_ID=
+
+# Google Calendar API
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REFRESH_TOKEN=
 ```
 
 #### GitHub PAT の取得方法
@@ -89,7 +125,7 @@ PEAK_LOG_USER_ID=cuid_yyy
 **② OAuth 2.0 クライアントID の作成**
 
 1. 「APIとサービス」>「認証情報」>「認証情報を作成」>「OAuthクライアントID」
-2. アプリケーションの種類: 「デスクトップアプリ」を選択
+2. アプリケーションの種類:「デスクトップアプリ」を選択
 3. 作成後、`GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` をメモ
 
 **③ リフレッシュトークンの取得**
@@ -128,27 +164,69 @@ node get-refresh-token.mjs
 
 出力されたリフレッシュトークンを `GOOGLE_REFRESH_TOKEN` に設定する。
 
-### 3. ビルド
+---
+
+## ローカル開発
 
 ```bash
-npm run build
+wrangler dev
+```
+
+起動後、MCP Inspector で動作確認できる。
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+接続先: `http://localhost:8788/mcp`（OAuth Settings > Quick OAuth Flow で GitHub 認証）
+
+---
+
+## デプロイ
+
+### 本番 secrets の登録
+
+```bash
+wrangler secret put GITHUB_CLIENT_ID
+wrangler secret put GITHUB_CLIENT_SECRET
+wrangler secret put COOKIE_ENCRYPTION_KEY
+wrangler secret put GITHUB_TOKEN
+wrangler secret put YARUKOTO_SUPABASE_URL
+wrangler secret put YARUKOTO_SUPABASE_SERVICE_KEY
+wrangler secret put YARUKOTO_USER_ID
+wrangler secret put PEAK_LOG_SUPABASE_URL
+wrangler secret put PEAK_LOG_SUPABASE_SERVICE_KEY
+wrangler secret put PEAK_LOG_USER_ID
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put GOOGLE_REFRESH_TOKEN
+```
+
+### デプロイ
+
+```bash
+wrangler deploy
 ```
 
 ---
 
-## Claude Codeへの登録
+## Claude への登録
+
+### Claude.ai（Web）
+
+1. Settings > Connectors > Add custom connector
+2. URL に `https://furikaeri-mcp.<account>.workers.dev/mcp` を入力
+3. GitHub OAuth の認可画面でログイン
+
+### Claude Code（CLI）
 
 ```bash
-claude mcp add furikaeri-mcp -- node /絶対パス/furikaeri-mcp/dist/index.js
+claude mcp add furikaeri --transport http https://furikaeri-mcp.<account>.workers.dev/mcp
 ```
-
-登録後、Claude Codeを再起動すると `/mcp` でツールが確認できる。
 
 ---
 
 ## 使い方例
-
-以下のようにClaudeに自然言語で話しかけるだけでよい。
 
 ```
 3月14日を振り返って
@@ -172,13 +250,13 @@ claude mcp add furikaeri-mcp -- node /絶対パス/furikaeri-mcp/dist/index.js
 
 ---
 
-## 開発
+## 開発コマンド
 
 ```bash
-npm run dev          # 開発サーバー起動（tsx）
-npm run build        # プロダクションビルド
-npm run typecheck    # 型チェック
-npm run lint         # ESLint
+wrangler dev        # ローカル開発サーバー起動
+wrangler deploy     # 本番デプロイ
+npm run typecheck   # 型チェック（tsc --noEmit）
+npm run lint        # ESLint
 ```
 
 ---
@@ -187,17 +265,12 @@ npm run lint         # ESLint
 
 | カテゴリ | 技術 |
 |---|---|
+| ランタイム | Cloudflare Workers |
 | 言語 | TypeScript (strict mode) |
-| MCP SDK | @modelcontextprotocol/sdk |
-| バリデーション | Zod |
-| DB ORM | Prisma 6（マルチDB構成） |
+| MCP SDK | @modelcontextprotocol/sdk / agents (McpAgent) |
+| 認証 | GitHub OAuth（@cloudflare/workers-oauth-provider） |
+| DB クライアント | @supabase/supabase-js（PostgREST 経由） |
 | DB | Supabase（PostgreSQL） |
-| 外部API | GitHub REST API / Google Calendar API v3 |
-| ランタイム | Node.js |
-
----
-
-## フェーズ
-
-- **Phase 1（現在）**: stdio transport — Claude Code からローカルで利用
-- **Phase 2（予定）**: Streamable HTTP transport — Railway にデプロイし、claude.ai やスマホからも利用可能に
+| 外部API | GitHub REST API / Google Calendar REST API v3 |
+| バリデーション | Zod |
+| KV | Cloudflare KV（OAuth トークン管理） |
