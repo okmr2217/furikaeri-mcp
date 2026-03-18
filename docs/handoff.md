@@ -24,6 +24,7 @@
 |---|---|---|
 | `get_tasks` | **完了** | OR 条件横断取得・reasons フィールド付き |
 | `get_peak_logs` | **完了** | Peak Log DB、performedAt JST 変換済み |
+| `get_commits` | 未着手 | GitHub REST API。まず include_stats: false で実装 |
 | `get_calendar_events` | 未着手 | Google Calendar API |
 | `get_photos_url` | **完了** | Protobuf 手動エンコード、外部依存なし |
 | `get_diary` | 未着手 | 日記アプリ未開発 |

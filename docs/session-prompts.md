@@ -17,8 +17,9 @@
 | #2 | Phase 3 | get_photos_url | §4.5 |
 | #3 | Phase 4-5 | Prisma マルチ DB + get_tasks | §5 §7 §4.1 §8 §9 |
 | #4 | Phase 6 | get_peak_logs | §4.2 §5 §8 §9 |
-| #5 | Phase 7-8 | get_calendar_events + get_diary スタブ | §4.3 §4.4 §9 §10 |
-| #6 | Phase 9-10 | get_day_summary + 動作確認 | §4.6 §10 |
+| #5 | Phase 7 | get_commits | §4.3 |
+| #6 | Phase 8-9 | get_calendar_events + get_diary スタブ | §4.4 §4.5 §9 §10 |
+| #7 | Phase 10-11 | get_day_summary + 動作確認 | §4.6 §10 |
 
 ---
 
@@ -173,7 +174,41 @@ docs/handoff.md を読んで現状を把握してください。
 
 ---
 
-## セッション #5 — get_calendar_events + get_diary スタブ
+## セッション #5 — get_commits
+
+```
+docs/handoff.md を読んで現状を把握してください。
+
+今日のゴール: get_commits 実装（GitHub REST API）
+
+仕様書は docs/project.md の「get_commits 設計詳細」を参照してください。
+
+今日実装するのは以下だけです:
+
+【ライブラリ・クライアント】
+- src/lib/github.ts
+  - GITHUB_TOKEN で Authorization ヘッダーを設定した fetch ラッパー or octokit クライアント
+  - getGithubClient() 関数をエクスポート
+
+【ツール実装（まず include_stats: false）】
+- src/tools/get-commits.ts
+  - Zod でパラメータバリデーション（repos: string[], since: string, until: string, include_stats?: boolean）
+  - GET /repos/{owner}/{repo}/commits を since / until で絞り込み
+  - 複数リポジトリは Promise.all で並列取得
+  - include_stats: false の場合: sha / message / author / date のみ返す
+  - include_stats: true の場合: 各コミットに対して GET /repos/{owner}/{repo}/commits/{sha} を呼び出し stats + files を追加
+  - エラーは ErrorResult の形式で返す（リポジトリ単位でエラーを分離し、他のリポジトリの結果は返す）
+- src/index.ts にツールを登録
+
+【やらないこと】
+- get_calendar_events の実装
+- Prisma の追加実装
+- include_stats: true は実装してもよいが、まず false で動作確認してから追加する
+```
+
+---
+
+## セッション #6 — get_calendar_events + get_diary スタブ
 
 ```
 docs/handoff.md を読んで現状を把握してください。
@@ -216,7 +251,7 @@ docs/handoff.md を読んで現状を把握してください。
 
 ---
 
-## セッション #6 — get_day_summary + 動作確認
+## セッション #7 — get_day_summary + 動作確認
 
 ```
 docs/handoff.md を読んで現状を把握してください。

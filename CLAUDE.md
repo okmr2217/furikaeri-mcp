@@ -11,6 +11,7 @@
 - TypeScript / @modelcontextprotocol/sdk
 - Prisma 6 / Supabase PostgreSQL × 3（Yarukoto / Peak Log / 日記）
 - googleapis（Calendar API v3）
+- GitHub REST API（コミット履歴取得、PAT認証）
 - Zod / date-fns / date-fns-tz
 
 ## コマンド
