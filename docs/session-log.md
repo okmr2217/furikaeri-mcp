@@ -23,6 +23,38 @@
 
 ---
 
+## 2026-03-18 セッション記録 #3
+
+### やったこと
+- `prisma/yarukoto/schema.prisma` 作成（Task・Category モデル、TaskStatus・Priority enum、`@@map` でテーブル名を明示）
+- `npx prisma generate` 実行（output: `node_modules/.prisma/yarukoto`）
+- `src/lib/prisma-yarukoto.ts` 作成（Yarukoto 用 PrismaClient）
+- `src/tools/get-tasks.ts` 初期実装（scheduledAt のみフィルター）→ 横断取得に再設計
+  - scheduledAt / completedAt / skippedAt / createdAt の OR 条件で union 取得
+  - 各タスクに `reasons` フィールドを追加
+  - summary を scheduled / completedOnDate / skippedOnDate / createdOnDate に変更
+- `src/index.ts` に get_tasks を登録
+- `src/types/index.ts` の Task / TasksResult 型を新仕様に合わせて更新
+- `docs/spec.md` §4.1 を新仕様に更新
+
+### 改善案（未対応）
+- なし
+
+### 失敗したアプローチ
+- Supabase ダイレクト接続（port 5432）はローカル環境（IPv4）から到達不可 → セッションプーラーに切り替えが必要
+
+### 技術メモ
+- Supabase ダイレクト接続は IPv6 必須。ローカル開発はセッションプーラー（pooler.supabase.com:5432）を使う
+- Railway 本番はダイレクト接続が使えるが、セッションプーラーでも問題なし
+- `toJSTDateRange` が DateTime フィルターの JST→UTC 変換をカバー。scheduledAt（DATE 型）は直接比較
+
+### 次にやりたいこと
+- get_tasks の動作確認（Supabase セッションプーラーで接続確認）
+- get_peak_logs の実装（Peak Log DB）
+- get_calendar_events の実装（Google Calendar API）
+
+---
+
 ## 2026-03-18 セッション記録 #2
 
 ### やったこと

@@ -57,7 +57,8 @@ PEAK_LOG_USER_ID=cuid_yyy
 
 ### 4.1 get_tasks
 
-Yarukoto のタスクを日付指定で取得する。
+Yarukoto のタスクを日付指定で横断取得する。
+`scheduledAt` / `completedAt` / `skippedAt` / `createdAt` のいずれかが当日に一致するタスクをすべて返す。
 
 **パラメータ:**
 
@@ -79,22 +80,42 @@ Yarukoto のタスクを日付指定で取得する。
       "priority": "HIGH",
       "category": "仕事",
       "memo": "15時までに提出",
-      "completedAt": "2026-03-14T15:30:00Z"
+      "scheduledAt": "2026-03-14",
+      "completedAt": "2026-03-14T15:30:00Z",
+      "skippedAt": null,
+      "createdAt": "2026-03-14T09:00:00Z",
+      "reasons": ["scheduled", "completed", "created"]
     }
   ],
   "summary": {
-    "total": 5,
-    "completed": 3,
-    "pending": 1,
-    "skipped": 1
+    "total": 8,
+    "scheduled": 5,
+    "completedOnDate": 6,
+    "skippedOnDate": 1,
+    "createdOnDate": 3
   }
 }
 ```
 
+**`reasons` フィールド:**
+
+| 値 | 条件 |
+|---|---|
+| `"scheduled"` | `scheduledAt = date` |
+| `"completed"` | `completedAt` が当日（JST） |
+| `"skipped"` | `skippedAt` が当日（JST） |
+| `"created"` | `createdAt` が当日（JST） |
+
 **SQL（Prisma クエリ相当）:**
 
 ```
-Task WHERE scheduledAt = {date} AND userId = {userId}
+Task WHERE userId = {userId}
+  AND (
+    scheduledAt = {date}
+    OR completedAt >= {date 00:00 JST} AND completedAt < {date+1 00:00 JST}
+    OR skippedAt  >= {date 00:00 JST} AND skippedAt  < {date+1 00:00 JST}
+    OR createdAt  >= {date 00:00 JST} AND createdAt  < {date+1 00:00 JST}
+  )
   [AND status = {status}]
   [AND category.name = {category}]
 ORDER BY displayOrder ASC

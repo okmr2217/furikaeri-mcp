@@ -22,7 +22,7 @@
 
 | ツール | ステータス | 備考 |
 |---|---|---|
-| `get_tasks` | 未着手 | Yarukoto DB |
+| `get_tasks` | **完了** | OR 条件横断取得・reasons フィールド付き |
 | `get_peak_logs` | 未着手 | Peak Log DB |
 | `get_calendar_events` | 未着手 | Google Calendar API |
 | `get_photos_url` | **完了** | Protobuf 手動エンコード、外部依存なし |
@@ -38,8 +38,9 @@
 
 ## 積み残し・注意点
 
-- Yarukoto / Peak Log の DB スキーマを確認してからツール実装に入る
+- ローカル開発では Supabase ダイレクト接続（port 5432）が IPv6 必須で到達不可。`.env` をセッションプーラー URL に変更すること
 - `get_diary` は日記アプリ未開発のためスタブ実装となる予定
+- Peak Log の `prisma/peak-log/schema.prisma` はまだ未作成
 
 ---
 
@@ -75,5 +76,6 @@
 
 ## 次のセッションで相談したいこと
 
-1. Prisma スキーマ（yarukoto・peak-log）を作成して `prisma:generate` を実行する
-2. `get_tasks`・`get_peak_logs` を実装して動作確認まで進める
+1. get_tasks の動作確認（Supabase セッションプーラー URL で接続確認）
+2. `get_peak_logs` 実装（prisma/peak-log/schema.prisma 作成 → prisma generate → ツール実装）
+3. `get_calendar_events` 実装（Google Calendar API 認証セットアップ）
