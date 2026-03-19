@@ -23,6 +23,20 @@
 
 ---
 
+## 2026-03-20 セッション記録 #13
+
+### やったこと
+- `get_commits` のリポジトリ未指定時の対象を personal リポジトリのみに絞り込み
+  - `/user/repos` に `type=owner` パラメータを追加し、organization リポジトリを除外
+
+### 技術メモ
+- GitHub API `/user/repos?type=owner` は認証ユーザー本人が owner のリポジトリのみ返す（organization・collaborator リポジトリは除外）
+
+### 次にやりたいこと
+- 全ツールの本番環境動作確認
+
+---
+
 ## 2026-03-19 セッション記録 #12
 
 ### やったこと

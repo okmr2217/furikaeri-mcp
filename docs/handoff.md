@@ -1,6 +1,6 @@
 # furikaeri-mcp — セッション引き継ぎ
 
-> 最終更新: 2026-03-19（セッション #12）
+> 最終更新: 2026-03-20（セッション #13）
 > バージョン: 0.1.0
 > このドキュメントは「今どこにいるか」を記録する。コンセプト・技術設計は @docs/project.md を参照。
 
@@ -65,7 +65,7 @@
 
 - Peak Log Supabase プロジェクトの Data API は有効化済み（以前は無効で PGRST002 が発生していた）
 - `get_diary` は日記アプリ未開発のためスタブ実装（空配列を返す）
-- `get_commits` の全リポジトリ取得は 100 件上限（個人利用では問題なし）
+- `get_commits` の全リポジトリ取得は 100 件上限（個人利用では問題なし）、`type=owner` で organization リポジトリを除外済み
 - `@modelcontextprotocol/sdk` は `1.26.0` に固定（`agents@0.5.0` の依存に合わせるため）
 - Supabase PostgREST の OR + AND 条件: `.or("and(col.gte.X,col.lt.Y),...")` 構文を使用
 - GitHub PAT は classic（`ghp_`）が必須。fine-grained PAT では `/user/repos` が 403 になる

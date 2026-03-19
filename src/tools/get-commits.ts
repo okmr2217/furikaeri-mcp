@@ -75,7 +75,7 @@ async function fetchRepoCommits(
 
 async function fetchAllRepos(env: Env): Promise<string[]> {
   const client = getGithubClient(env);
-  const items = await client.request<GithubRepoItem[]>("/user/repos?per_page=100&sort=pushed");
+  const items = await client.request<GithubRepoItem[]>("/user/repos?per_page=100&sort=pushed&type=owner");
   return items.map((r) => r.full_name);
 }
 
