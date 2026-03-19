@@ -23,6 +23,24 @@
 
 ---
 
+## 2026-03-19 セッション記録 #12
+
+### やったこと
+- Peak Log Supabase プロジェクトの PostgREST 503（PGRST002）を調査・解決
+  - 原因: Supabase ダッシュボードで Data API（PostgREST）が無効になっていた
+  - Project Settings → API → Data API を有効化して解決
+
+### 技術メモ
+- PGRST002「Could not query the database for the schema cache」は PostgREST がスキーマ情報を取得できない状態を示す
+- SQL Editor は直接 PostgreSQL に接続するため、PostgREST が無効でも動作する（切り分けの注意点）
+- Supabase で Data API を有効化する場所: Project Settings → API → Data API（Enable/Disable トグル）
+
+### 次にやりたいこと
+- get_peak_logs の実データ動作確認
+- 全ツールの本番環境動作確認
+
+---
+
 ## 2026-03-19 セッション記録 #11
 
 ### やったこと
