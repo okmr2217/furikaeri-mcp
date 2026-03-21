@@ -23,6 +23,27 @@
 
 ---
 
+## 2026-03-22 セッション記録 #14
+
+### やったこと
+- `src/lib/date-utils.ts` に `toJSTISOString(utcStr)` を追加
+  - UTC ISO 文字列を `"+09:00"` 付き JST ISO 文字列に変換（例: `"2026-03-22T03:30:00+09:00"`）
+- `get-peak-logs.ts` / `get-day-summary.ts` の `performedAt` レスポンスを `toJSTISOString()` で変換
+
+### 背景
+peak-log 本体の `performedAt` タイムゾーンバグ修正（DB の全レコードを UTC に正規化）に合わせた対応。
+UTC で返っていた `performedAt` を JST ISO 文字列にすることで、Claude が日本語文脈で直感的に読めるようになる。
+
+### 技術メモ
+- `toJSTISOString` の実装: `new Date(utcStr).getTime() + 9h` → `.toISOString().slice(0, 19) + "+09:00"`
+- peak-log 側の DB マイグレーション（`scripts/migrate-performed-at.ts`）は開発 DB で実行済み（46件補正）
+
+### 次にやりたいこと
+- `wrangler deploy` で本番に反映する
+- 本番環境で `get_peak_logs` の `performedAt` が JST 形式で返ることを確認
+
+---
+
 ## 2026-03-20 セッション記録 #13
 
 ### やったこと
