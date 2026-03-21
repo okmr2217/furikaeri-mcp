@@ -77,9 +77,9 @@ async function fetchTasks(env: Env, date: string) {
       category: t.categories?.name ?? null,
       memo: t.memo,
       scheduledAt: t.scheduledAt,
-      completedAt: t.completedAt,
-      skippedAt: t.skippedAt,
-      createdAt: t.createdAt,
+      completedAt: t.completedAt ? toJSTISOString(t.completedAt) : null,
+      skippedAt: t.skippedAt ? toJSTISOString(t.skippedAt) : null,
+      createdAt: toJSTISOString(t.createdAt),
       reasons,
     };
   });

@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { createYarukotoClient } from "../lib/supabase.js";
-import { toJSTDateRange } from "../lib/date-utils.js";
+import { toJSTDateRange, toJSTISOString } from "../lib/date-utils.js";
 import type { Env, Task, TaskReason } from "../types/index.js";
 
 const paramsSchema = {
@@ -84,9 +84,9 @@ export function registerGetTasks(server: McpServer, env: Env) {
             category: t.categories?.name ?? null,
             memo: t.memo,
             scheduledAt: t.scheduledAt,
-            completedAt: t.completedAt,
-            skippedAt: t.skippedAt,
-            createdAt: t.createdAt,
+            completedAt: t.completedAt ? toJSTISOString(t.completedAt) : null,
+            skippedAt: t.skippedAt ? toJSTISOString(t.skippedAt) : null,
+            createdAt: toJSTISOString(t.createdAt),
             reasons,
           };
         });
