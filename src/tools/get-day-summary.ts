@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { createYarukotoClient, createPeakLogClient } from "../lib/supabase.js";
-import { toJSTDateRange } from "../lib/date-utils.js";
+import { toJSTDateRange, toJSTISOString } from "../lib/date-utils.js";
 import { fetchCalendarEvents } from "../lib/google-calendar.js";
 import { formatDateForPhotos, generatePhotosSearchUrl } from "../lib/photos-url.js";
 import type { Env, Task, TaskReason } from "../types/index.js";
@@ -120,7 +120,7 @@ async function fetchPeakLogs(env: Env, date: string) {
 
     return {
       activity: { name: row.activities.name, emoji: row.activities.emoji, color: row.activities.color },
-      performedAt: row.performedAt,
+      performedAt: toJSTISOString(row.performedAt),
       reflection: reflection
         ? { excitement: reflection.excitement, achievement: reflection.achievement, wantAgain: reflection.wantAgain, note: reflection.note }
         : null,

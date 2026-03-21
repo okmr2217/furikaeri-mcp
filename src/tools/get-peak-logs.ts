@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { createPeakLogClient } from "../lib/supabase.js";
-import { toJSTDateRange } from "../lib/date-utils.js";
+import { toJSTDateRange, toJSTISOString } from "../lib/date-utils.js";
 import type { Env } from "../types/index.js";
 
 const paramsSchema = {
@@ -61,7 +61,7 @@ export function registerGetPeakLogs(server: McpServer, env: Env) {
               emoji: row.activities.emoji,
               color: row.activities.color,
             },
-            performedAt: row.performedAt,
+            performedAt: toJSTISOString(row.performedAt),
             reflection: reflection
               ? {
                   excitement: reflection.excitement,
