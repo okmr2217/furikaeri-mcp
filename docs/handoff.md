@@ -67,13 +67,14 @@
 4. **毎月の transactions CSV 更新**（月次運用）
    ```bash
    iconv -f SHIFT_JIS -t UTF-8 download.csv > transactions-YYYY-MM.csv
-   npx wrangler kv key put --remote --binding=FURIKAERI_KV "transactions/YYYY-MM.csv" --path=./transactions-YYYY-MM.csv
+   npx wrangler r2 object put furikaeri-storage/transactions/YYYY-MM.csv --file=./transactions-YYYY-MM.csv --remote
    ```
 
 ### その他の注意点
 
-- **`get_location_history` の KV キー**: `location-history/Timeline.json`（固定）。Google Maps タイムライン → スマホからエクスポートした JSON をアップロード
-- **`get_transactions` の KV キー設計**: `transactions/YYYY-MM.csv`（月次ファイル）。CSV は Shift_JIS → UTF-8 変換済みを KV にアップロードすること
+- **R2 バケット `furikaeri-storage`**: `location-history/Timeline.json`（102MB）と `transactions/YYYY-MM.csv` を格納。KV ではなく R2 を使用
+- **`get_location_history` の R2 キー**: `location-history/Timeline.json`（固定）。Google Maps タイムラインからエクスポートした JSON をアップロード
+- **`get_transactions` の R2 キー設計**: `transactions/YYYY-MM.csv`（月次ファイル）。CSV は Shift_JIS → UTF-8 変換済みを R2 にアップロードすること
 - **`FURIKAERI_KV` namespace ID**: `1853546da21e4a42985acc9af617dc24`（wrangler.toml に設定済み）
 - **`performedAt` のレスポンス形式が変更済み**: `"2026-03-14T19:10:00Z"` → `"2026-03-14T19:10:00+09:00"`（`toJSTISOString` で変換）
 - peak-log 本体の DB は UTC 正規化済み（`scripts/migrate-performed-at.ts` を開発 DB で実行済み）
