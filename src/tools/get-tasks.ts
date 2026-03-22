@@ -22,13 +22,13 @@ type TaskRow = {
   completedAt: string | null;
   skippedAt: string | null;
   createdAt: string;
-  categories: { name: string; color: string | null } | null;
+  categories: { name: string; color: string | null; description: string | null } | null;
 };
 
 export function registerGetTasks(server: McpServer, env: Env) {
   server.tool(
     "get_tasks",
-    "Yarukoto のタスクを日付指定で取得する（その日に予定・完了・スキップ・作成されたタスクを横断取得）",
+    "Yarukoto のタスクを日付指定で取得する（その日に予定・完了・スキップ・作成されたタスクを横断取得）。レスポンスにはタスクが属するカテゴリの説明文も含まれる",
     paramsSchema,
     async (params) => {
       try {
@@ -91,8 +91,17 @@ export function registerGetTasks(server: McpServer, env: Env) {
           };
         });
 
+        const categoriesMap = new Map<string, string | null>();
+        for (const t of taskRows) {
+          if (t.categories) {
+            categoriesMap.set(t.categories.name, t.categories.description ?? null);
+          }
+        }
+        const categories = Array.from(categoriesMap.entries()).map(([name, description]) => ({ name, description }));
+
         const result = {
           date: params.date,
+          categories,
           tasks,
           summary: {
             total: tasks.length,

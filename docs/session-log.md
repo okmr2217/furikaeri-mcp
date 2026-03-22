@@ -23,6 +23,26 @@
 
 ---
 
+## 2026-03-23 セッション記録 #15
+
+### やったこと
+- `get_tasks` レスポンスにカテゴリ説明文（`categories` 配列）を追加
+  - `TaskRow` 型の `categories` に `description: string | null` を追加
+  - タスク構築後、レスポンス内のタスクが属するカテゴリを `Map` で重複排除して `categories` 配列を生成
+  - トップレベルに `categories: [{ name, description }]` として追加
+  - `TasksResult` 型に `categories` フィールドを追加
+  - ツール説明文にカテゴリ説明文が含まれる旨を追記
+
+### 技術メモ
+- Yarukoto の `categories` テーブルに `description` カラム（VARCHAR(200)、nullable）が追加されたことへの対応
+- `select("*, categories(*)")` はそのまま変更不要（`description` も自動取得される）
+- カテゴリの重複排除に `Map<string, string | null>` を使用（カテゴリ名をキー）
+
+### 次にやりたいこと
+- 本番環境での全ツール動作確認
+
+---
+
 ## 2026-03-22 セッション記録 #14
 
 ### やったこと

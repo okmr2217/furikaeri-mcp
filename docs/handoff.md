@@ -1,6 +1,6 @@
 # furikaeri-mcp — セッション引き継ぎ
 
-> 最終更新: 2026-03-22（セッション #14）
+> 最終更新: 2026-03-23（セッション #15）
 > バージョン: 0.1.0
 > このドキュメントは「今どこにいるか」を記録する。コンセプト・技術設計は @docs/project.md を参照。
 
@@ -30,7 +30,7 @@
 
 | ツール | ステータス | 備考 |
 |---|---|---|
-| `get_tasks` | **完了** | Supabase PostgREST、OR 条件横断取得 |
+| `get_tasks` | **完了** | Supabase PostgREST、OR 条件横断取得、カテゴリ説明文付き |
 | `get_peak_logs` | **完了** | Supabase PostgREST、reflections リレーション |
 | `get_commits` | **完了・動作確認済み** | GitHub REST API、User-Agent ヘッダー追加済み |
 | `get_calendar_events` | **完了** | fetch ベースの Google Calendar REST API |
@@ -49,8 +49,6 @@
 
 ### 次にやること
 
-0. **`wrangler deploy` で本番反映**（`performedAt` JST 変換を反映するため）
-
 1. **claude.ai コネクター登録**
    - Settings > Integrations > Add custom integration
    - URL: `https://furikaeri-mcp.okumuradaichi2007.workers.dev/mcp`
@@ -65,8 +63,9 @@
 
 ### その他の注意点
 
-- **`performedAt` のレスポンス形式が変更済み**: `"2026-03-14T19:10:00Z"` → `"2026-03-14T19:10:00+09:00"`（`toJSTISOString` で変換）。デプロイ前は本番に未反映
+- **`performedAt` のレスポンス形式が変更済み**: `"2026-03-14T19:10:00Z"` → `"2026-03-14T19:10:00+09:00"`（`toJSTISOString` で変換）
 - peak-log 本体の DB は UTC 正規化済み（`scripts/migrate-performed-at.ts` を開発 DB で実行済み）
+- **`get_tasks` レスポンスにカテゴリ説明文追加済み**: トップレベルに `categories: [{ name, description }]` を返す（Yarukoto の `categories.description` カラム追加対応）
 - Peak Log Supabase プロジェクトの Data API は有効化済み（以前は無効で PGRST002 が発生していた）
 - `get_diary` は日記アプリ未開発のためスタブ実装（空配列を返す）
 - `get_commits` の全リポジトリ取得は 100 件上限（個人利用では問題なし）、`type=owner` で organization リポジトリを除外済み

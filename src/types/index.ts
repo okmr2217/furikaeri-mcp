@@ -47,6 +47,7 @@ export type Task = {
 
 export type TasksResult = {
   date: string;
+  categories: Array<{ name: string; description: string | null }>;
   tasks: Task[];
   summary: {
     total: number;
