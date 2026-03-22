@@ -6,6 +6,12 @@ import { fetchCalendarEvents } from "../lib/google-calendar.js";
 import { formatDateForPhotos, generatePhotosSearchUrl } from "../lib/photos-url.js";
 import type { Env, Task, TaskReason } from "../types/index.js";
 
+function parseCSVLine(line: string): string[] {
+  const trimmed = line.startsWith('"') ? line.slice(1) : line;
+  const cleaned = trimmed.endsWith('"') ? trimmed.slice(0, -1) : trimmed;
+  return cleaned.split('","');
+}
+
 const paramsSchema = {
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 形式で指定してください"),
 };
@@ -164,18 +170,110 @@ function fetchPhotosUrl(date: string) {
   return { date, searchQuery, url };
 }
 
+async function fetchLocationHistory(env: Env, date: string) {
+  const json = await env.FURIKAERI_KV.get("location-history/Timeline.json", "text");
+  if (json === null) return { segments: [] };
+
+  const parsed = JSON.parse(json) as { semanticSegments?: Array<{
+    startTime: string;
+    endTime: string;
+    visit?: { topCandidate?: { placeId: string; semanticType: string; probability: number; placeLocation?: { latLng: string } } };
+    activity?: { start?: { latLng: string }; end?: { latLng: string }; distanceMeters?: number; topCandidate?: { type: string } };
+    timelinePath?: unknown;
+    timelineMemory?: unknown;
+  }> };
+  const semanticSegments = parsed.semanticSegments ?? [];
+
+  const segments = semanticSegments
+    .filter((seg) => !("timelineMemory" in seg) && !("timelinePath" in seg))
+    .filter((seg) => {
+      const d = new Date(seg.startTime);
+      const jstMs = d.getTime() + 9 * 60 * 60 * 1000;
+      return new Date(jstMs).toISOString().slice(0, 10) === date;
+    })
+    .map((seg) => {
+      if (seg.visit) {
+        const tc = seg.visit.topCandidate;
+        return {
+          startTime: seg.startTime, endTime: seg.endTime, type: "visit" as const,
+          visit: tc ? { placeId: tc.placeId, semanticType: tc.semanticType, probability: tc.probability, placeLocation: tc.placeLocation?.latLng ?? "" } : undefined,
+        };
+      }
+      if (seg.activity) {
+        const ac = seg.activity;
+        return {
+          startTime: seg.startTime, endTime: seg.endTime, type: "activity" as const,
+          activity: { startLocation: ac.start?.latLng ?? "", endLocation: ac.end?.latLng ?? "", distanceMeters: ac.distanceMeters ?? 0, type: ac.topCandidate?.type ?? "" },
+        };
+      }
+      return null;
+    })
+    .filter((seg): seg is NonNullable<typeof seg> => seg !== null);
+
+  return { segments };
+}
+
+async function fetchTransactions(env: Env, date: string) {
+  const yearMonth = date.slice(0, 7);
+  const kvKey = `transactions/${yearMonth}.csv`;
+
+  const csv = await env.FURIKAERI_KV.get(kvKey, "text");
+  if (csv === null) return { transactions: [] };
+
+  const lines = csv.split("\n");
+  const transactions: Array<{
+    date: string;
+    content: string;
+    amount: number;
+    institution: string;
+    categoryL: string;
+    categoryM: string;
+    memo: string;
+  }> = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const fields = parseCSVLine(line);
+    if (fields.length < 10) continue;
+
+    const csvDate = fields[1].replace(/\//g, "-");
+    const isTransfer = fields[8] === "1";
+
+    if (csvDate !== date || isTransfer) continue;
+
+    const amountStr = fields[3].replace(/,/g, "");
+    const amount = parseInt(amountStr, 10);
+
+    transactions.push({
+      date: csvDate,
+      content: fields[2],
+      amount: isNaN(amount) ? 0 : amount,
+      institution: fields[4],
+      categoryL: fields[5],
+      categoryM: fields[6],
+      memo: fields[7],
+    });
+  }
+
+  return { transactions };
+}
+
 export function registerGetDaySummary(server: McpServer, env: Env) {
   server.tool(
     "get_day_summary",
     "1日分のデータ（タスク・ピークログ・日記・カレンダー・写真URL）を一括取得する",
     paramsSchema,
     async ({ date }) => {
-      const [tasksResult, peakLogsResult, diaryResult, calendarResult, photosResult] = await Promise.allSettled([
+      const [tasksResult, peakLogsResult, diaryResult, calendarResult, photosResult, transactionsResult, locationHistoryResult] = await Promise.allSettled([
         fetchTasks(env, date),
         fetchPeakLogs(env, date),
         fetchDiary(date),
         fetchCalendar(env, date),
         Promise.resolve(fetchPhotosUrl(date)),
+        fetchTransactions(env, date),
+        fetchLocationHistory(env, date),
       ]);
 
       const resolveResult = <T>(result: PromiseSettledResult<T>, code: string) => {
@@ -191,6 +289,8 @@ export function registerGetDaySummary(server: McpServer, env: Env) {
         diary: resolveResult(diaryResult, "DIARY_ERROR"),
         calendarEvents: resolveResult(calendarResult, "CALENDAR_ERROR"),
         photosUrl: resolveResult(photosResult, "PHOTOS_ERROR"),
+        transactions: resolveResult(transactionsResult, "TRANSACTIONS_ERROR"),
+        locationHistory: resolveResult(locationHistoryResult, "LOCATION_HISTORY_ERROR"),
       };
 
       return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };

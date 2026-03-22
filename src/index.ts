@@ -11,6 +11,8 @@ import { registerGetDiary } from "./tools/get-diary.js";
 import { registerGetCalendarEvents } from "./tools/get-calendar-events.js";
 import { registerGetPhotosUrl } from "./tools/get-photos-url.js";
 import { registerGetDaySummary } from "./tools/get-day-summary.js";
+import { registerGetTransactions } from "./tools/get-transactions.js";
+import { registerGetLocationHistory } from "./tools/get-location-history.js";
 
 // アクセスを許可する GitHub ユーザー名を設定する
 const ALLOWED_USERNAMES = new Set<string>([
@@ -33,6 +35,8 @@ export class FurikaeriMCP extends McpAgent<Env, Record<string, never>, Props> {
     registerGetCalendarEvents(this.server, env);
     registerGetPhotosUrl(this.server);
     registerGetDaySummary(this.server, env);
+    registerGetTransactions(this.server, env);
+    registerGetLocationHistory(this.server, env);
   }
 }
 

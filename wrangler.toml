@@ -16,6 +16,10 @@ bindings = [
 binding = "OAUTH_KV"
 id = "2b8d1074a09a4172908f3bd096bf40b6"
 
+[[kv_namespaces]]
+binding = "FURIKAERI_KV"
+id = "1853546da21e4a42985acc9af617dc24"
+
 [observability]
 enabled = true
 

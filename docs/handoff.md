@@ -36,7 +36,8 @@
 | `get_calendar_events` | **完了** | fetch ベースの Google Calendar REST API |
 | `get_photos_url` | **完了** | Uint8Array / btoa（Workers 互換） |
 | `get_diary` | **スタブ完了** | 空配列を返す（日記アプリ未開発） |
-| `get_day_summary` | **完了** | Promise.allSettled 並行取得 |
+| `get_day_summary` | **完了** | Promise.allSettled 並行取得（transactions 含む） |
+| `get_transactions` | **完了** | Cloudflare Workers KV から CSV を取得・パース |
 
 ### Transport
 
@@ -59,10 +60,18 @@
    ```
 
 3. **本番環境での全ツール動作確認**
-   - get_tasks / get_peak_logs / get_calendar_events / get_commits を実データで確認
+   - get_tasks / get_peak_logs / get_calendar_events / get_commits / get_transactions を実データで確認
+
+4. **毎月の transactions CSV 更新**（月次運用）
+   ```bash
+   iconv -f SHIFT_JIS -t UTF-8 download.csv > transactions-YYYY-MM.csv
+   npx wrangler kv key put --remote --binding=FURIKAERI_KV "transactions/YYYY-MM.csv" --path=./transactions-YYYY-MM.csv
+   ```
 
 ### その他の注意点
 
+- **`get_transactions` の KV キー設計**: `transactions/YYYY-MM.csv`（月次ファイル）。CSV は Shift_JIS → UTF-8 変換済みを KV にアップロードすること
+- **`FURIKAERI_KV` namespace ID**: `1853546da21e4a42985acc9af617dc24`（wrangler.toml に設定済み）
 - **`performedAt` のレスポンス形式が変更済み**: `"2026-03-14T19:10:00Z"` → `"2026-03-14T19:10:00+09:00"`（`toJSTISOString` で変換）
 - peak-log 本体の DB は UTC 正規化済み（`scripts/migrate-performed-at.ts` を開発 DB で実行済み）
 - **`get_tasks` レスポンスにカテゴリ説明文追加済み**: トップレベルに `categories: [{ name, description }]` を返す（Yarukoto の `categories.description` カラム追加対応）
@@ -78,6 +87,6 @@
 
 ## 次のセッションで相談したいこと
 
-1. 本番環境での全ツール実データ動作確認
+1. 本番環境での全ツール実データ動作確認（get_transactions 含む）
 2. 日記アプリ開発（`get_diary` のスタブ解除）
 3. 追加ツール・機能の検討

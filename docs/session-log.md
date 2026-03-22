@@ -23,6 +23,33 @@
 
 ---
 
+## 2026-03-23 セッション記録 #16
+
+### やったこと
+- `get_transactions` ツールを新規実装
+  - マネーフォワード ME の CSV を Cloudflare Workers KV から取得・パース
+  - KVキー設計: `transactions/YYYY-MM.csv`（月次ファイル）
+  - 振替（振替列=1）の除外、日付フィルタ（YYYY/MM/DD → YYYY-MM-DD 変換）
+  - CSV は UTF-8 変換済み前提（ツール内での文字コード変換なし）
+- `get_day_summary` に `transactions` フィールドを追加（Promise.allSettled で並列取得）
+- `wrangler.toml` に `FURIKAERI_KV` namespace binding を追加（ID: `1853546da21e4a42985acc9af617dc24`）
+- `src/types/index.ts` の `Env` に `FURIKAERI_KV: KVNamespace` を追加
+- `npx wrangler kv namespace create FURIKAERI_KV` で namespace 作成
+- テストデータ（`test-data/transactions-2026-03-utf8.csv`）をリモート KV にアップロード
+- Node.js スクリプトでパースロジックを単体テスト（全3ケース通過）
+- `wrangler deploy` で本番デプロイ完了
+
+### 技術メモ
+- CSV の全フィールドがダブルクォートで囲まれているため、`parseCSVLine` で先頭末尾の `"` を除去してから `","` で split
+- `wrangler kv key put` はデフォルトでローカル書き込み。リモートには `--remote` フラグが必要
+- マネーフォワード CSV は Shift_JIS ダウンロードのため、KV アップロード前に `iconv -f SHIFT_JIS -t UTF-8` で変換が必要
+
+### 次にやりたいこと
+- 毎月の CSV 更新フロー運用（`iconv` → `wrangler kv key put --remote`）
+- 本番環境での `get_transactions` 実データ動作確認（claude.ai から）
+
+---
+
 ## 2026-03-23 セッション記録 #15
 
 ### やったこと
