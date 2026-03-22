@@ -20,7 +20,9 @@
 | `get_calendar_events` | Google Calendar API | 日付指定でカレンダー予定を取得 |
 | `get_photos_url` | Google Photos（URL生成） | 日付指定でGoogle Photos検索URLを生成 |
 | `get_diary` | 日記アプリ（開発予定） | 日付指定で日記エントリを取得（スタブ） |
-| `get_day_summary` | 上記5ツールを集約 | 1日分のデータを一括取得 |
+| `get_transactions` | マネーフォワード ME（R2 CSV） | 日付指定で決済・支出履歴を取得 |
+| `get_location_history` | Google Maps タイムライン（R2 JSON） | 日付指定で移動・訪問場所履歴を取得 |
+| `get_day_summary` | 上記ツールを集約 | 1日分のデータを一括取得 |
 
 ---
 
@@ -273,4 +275,5 @@ npm run lint        # ESLint
 | DB | Supabase（PostgreSQL） |
 | 外部API | GitHub REST API / Google Calendar REST API v3 |
 | バリデーション | Zod |
-| KV | Cloudflare KV（OAuth トークン管理） |
+| KV | Cloudflare KV（OAuth トークン管理・location-history キャッシュ） |
+| R2 | Cloudflare R2（Timeline.json・transactions CSV の格納） |
