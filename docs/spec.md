@@ -426,6 +426,16 @@ function generatePhotosSearchUrl(query: string): string {
 |---|---|---|---|
 | date | string (YYYY-MM-DD) | ✓ | 対象日付 |
 
+**タイムアウト:**
+
+各データソースに個別タイムアウトを設定する。タイムアウトしたソースは `{ error: true, message: "...: NNNNNms でタイムアウト", code: "..._ERROR" }` として返り、他ソースのデータは失われない。
+
+| ソース | タイムアウト |
+|---|---|
+| locationHistory | 20 秒 |
+| tasks / peakLogs / calendar / transactions | 15 秒 |
+| diary / photosUrl | 制限なし（同期的） |
+
 **返却データ:**
 
 ```json

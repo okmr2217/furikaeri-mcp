@@ -1,6 +1,6 @@
 # furikaeri-mcp — セッション引き継ぎ
 
-> 最終更新: 2026-03-23（セッション #18）
+> 最終更新: 2026-03-23（セッション #20）
 > バージョン: 0.3.0
 > このドキュメントは「今どこにいるか」を記録する。コンセプト・技術設計は @docs/project.md を参照。
 
@@ -36,7 +36,7 @@
 | `get_calendar_events` | **完了** | fetch ベースの Google Calendar REST API |
 | `get_photos_url` | **完了** | Uint8Array / btoa（Workers 互換） |
 | `get_diary` | **スタブ完了** | 空配列を返す（日記アプリ未開発） |
-| `get_day_summary` | **完了** | Promise.allSettled 並行取得（transactions 含む） |
+| `get_day_summary` | **完了** | Promise.allSettled 並行取得（個別タイムアウト付き: locationHistory 20s / 他 15s） |
 | `get_transactions` | **完了** | Cloudflare R2 から月次 CSV を取得・パース（`transactions/YYYY-MM.csv`） |
 | `get_location_history` | **完了** | Google Maps Timeline.json を R2 から取得し日付別にフィルタ・KV キャッシュ（TTL 7日） |
 

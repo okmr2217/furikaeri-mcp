@@ -23,6 +23,26 @@
 
 ---
 
+## 2026-03-23 セッション記録 #20
+
+### やったこと
+- `get_day_summary` に個別タイムアウトを追加（locationHistory 20s / 他 15s）
+  - `withTimeout<T>` ヘルパー関数を追加（定数: `SOURCE_TIMEOUT_MS = 15_000`, `LOCATION_TIMEOUT_MS = 20_000`）
+  - `Promise.allSettled` 内の fetchTasks / fetchPeakLogs / fetchCalendar / fetchTransactions / fetchLocationHistoryForDate を `withTimeout` でラップ
+  - fetchDiary・fetchPhotosUrl は同期的/スタブのためラップ不要
+  - タイムアウト時は既存の `resolveResult` が `{ error: true, message: "...: NNNNNms でタイムアウト", code: "..._ERROR" }` を返すため、他ソースのデータは失われない
+
+### 技術メモ
+- MCP ツール呼び出しのタイムアウトは 45 秒。locationHistory は KV キャッシュミス時に R2 から 102MB の Timeline.json を丸読みするため、従来の実装では全体がタイムアウトしていた
+- 個別タイムアウトにより、遅いソースが他ソースの結果を道連れにしなくなる
+- `Promise` コンストラクタ内で `setTimeout` + `.then` を使うパターン（`Promise.race` より明示的でタイマークリアがしやすい）
+
+### 次にやりたいこと
+- 案C: Timeline.json を月次分割して R2 保存（`location-history/YYYY-MM.json`）— 初回アクセスも高速化できる根本的解決策
+- 日記アプリ開発（`get_diary` のスタブ解除）
+
+---
+
 ## 2026-03-23 セッション記録 #19
 
 ### やったこと
