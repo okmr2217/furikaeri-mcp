@@ -3,6 +3,7 @@ export interface Env {
   // Cloudflare bindings
   OAUTH_KV: KVNamespace;
   FURIKAERI_KV: KVNamespace;
+  FURIKAERI_R2: R2Bucket;
   MCP_OBJECT: DurableObjectNamespace;
 
   // GitHub OAuth（MCP 認証用）

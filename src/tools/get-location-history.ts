@@ -47,7 +47,8 @@ export function registerGetLocationHistory(server: McpServer, env: Env) {
     paramsSchema,
     async ({ date }) => {
       try {
-        const json = await env.FURIKAERI_KV.get("location-history/Timeline.json", "text");
+        const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
+        const json = obj ? await obj.text() : null;
         if (json === null) {
           return { content: [{ type: "text" as const, text: JSON.stringify({ segments: [] }) }] };
         }

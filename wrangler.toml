@@ -20,6 +20,10 @@ id = "2b8d1074a09a4172908f3bd096bf40b6"
 binding = "FURIKAERI_KV"
 id = "1853546da21e4a42985acc9af617dc24"
 
+[[r2_buckets]]
+binding = "FURIKAERI_R2"
+bucket_name = "furikaeri-storage"
+
 [observability]
 enabled = true
 

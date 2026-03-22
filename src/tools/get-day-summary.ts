@@ -171,7 +171,8 @@ function fetchPhotosUrl(date: string) {
 }
 
 async function fetchLocationHistory(env: Env, date: string) {
-  const json = await env.FURIKAERI_KV.get("location-history/Timeline.json", "text");
+  const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
+  const json = obj ? await obj.text() : null;
   if (json === null) return { segments: [] };
 
   const parsed = JSON.parse(json) as { semanticSegments?: Array<{
