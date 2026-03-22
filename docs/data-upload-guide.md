@@ -58,15 +58,15 @@ npx wrangler r2 object put furikaeri-storage/transactions/2026-04.csv \
 
 ---
 
-## 2. Google Maps タイムライン（Timeline.json）
+## 2. Google Maps タイムライン（位置情報）
 
 ### キー設計
 
 ```
-location-history/Timeline.json
+location-history/YYYY-MM.json  （例: location-history/2026-03.json）
 ```
 
-1ファイル固定（全期間の累積データ）。
+月ごとに1ファイル。分割スクリプトで生成する。
 
 ### 手順
 
@@ -77,19 +77,42 @@ location-history/Timeline.json
 3. 右上のメニュー（...）→ 「場所の履歴のエクスポート」
 4. `タイムライン.json`（または `Timeline.json`）がダウンロードされる
 
-> ファイルサイズは数十〜100MB 超になることがある（KV ではなく R2 に格納する理由）
-
-#### 2-2. R2 にアップロード
+#### 2-2. 月別に分割
 
 ```bash
-npx wrangler r2 object put furikaeri-storage/location-history/Timeline.json \
-  --file="./タイムライン.json" \
-  --remote
+npx tsx scripts/split-timeline.ts ./タイムライン.json
+```
+
+`output/location-history/` に月別の JSON が生成される。
+
+#### 2-3. R2 にアップロード
+
+```bash
+for f in output/location-history/*.json; do
+  key="location-history/$(basename "$f")"
+  npx wrangler r2 object put "furikaeri-storage/$key" --file="$f" --remote
+  echo "uploaded: $key"
+done
+```
+
+#### 2-4. KV キャッシュのクリア（任意）
+
+既に KV にキャッシュされた日付がある場合、古いキャッシュを削除する:
+
+```bash
+# 特定の日付のキャッシュを削除
+npx wrangler kv key delete "location-history:2026-03-20" --binding FURIKAERI_KV --remote
+
+# または全キャッシュをクリア（location-history: プレフィックスのキーを列挙して削除）
+npx wrangler kv key list --binding FURIKAERI_KV --remote --prefix "location-history:" \
+  | jq -r '.[].name' \
+  | xargs -I{} npx wrangler kv key delete "{}" --binding FURIKAERI_KV --remote
 ```
 
 ### 運用タイミング
 
-新しいデータを反映したいときに都度アップロード（ファイルは上書きされる）。
+新しいデータを反映したいときに 2-1 → 2-2 → 2-3 を実行する。
+差分アップロード: 直近の月のみ再アップロードすれば OK（過去の月は変わらない）。
 
 ---
 

@@ -2,8 +2,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { Env } from "../types/index.js";
 
-// TODO: Timeline.json が 25MB を超える場合は R2 移行を検討
-
 const paramsSchema = {
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 形式で指定してください"),
 };
@@ -47,7 +45,8 @@ export async function fetchLocationHistoryForDate(env: Env, date: string): Promi
   const cached = await env.FURIKAERI_KV.get(kvKey);
   if (cached) return JSON.parse(cached) as { segments: ReturnType<typeof buildSegments> };
 
-  const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
+  const yearMonth = date.slice(0, 7);
+  const obj = await env.FURIKAERI_R2.get(`location-history/${yearMonth}.json`);
   const json = obj ? await obj.text() : null;
   if (json === null) return { segments: [] };
 
