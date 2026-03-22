@@ -6,6 +6,16 @@
 - Google Maps タイムラインの移動・訪問場所取得に対応（get_location_history）—— R2 から Timeline.json を取得し、日付別に KV キャッシュ（TTL 7日）
 - get_day_summary に transactions・locationHistory を追加
 
+## 0.2.0 - 2026-03-19
+
+- Cloudflare Workers + GitHub OAuth 構成に全面移行（stdio → Streamable HTTP）
+- Prisma を廃止し Supabase JS Client（PostgREST）に移行
+- GitHub OAuth 認証を実装（workers-oauth-provider、ALLOWED_USERNAMES によるユーザー制限）
+- 全ツールを Workers ランタイム対応に移植
+- get_commits に User-Agent ヘッダーを追加（Workers の fetch は自動付与しないため）
+- performedAt を JST ISO 文字列（+09:00）で返すよう修正
+- get_tasks レスポンスにカテゴリ説明文（categories）を追加
+
 ## 0.1.0 - 2026-03-19
 
 - Google Calendar のイベント取得に対応（指定日の予定一覧）
