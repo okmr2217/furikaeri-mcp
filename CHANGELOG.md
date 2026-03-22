@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2026-03-23
+
+- マネーフォワード ME の決済・支出履歴取得に対応（get_transactions）—— R2 から月次 CSV を取得・パース
+- Google Maps タイムラインの移動・訪問場所取得に対応（get_location_history）—— R2 から Timeline.json を取得し、日付別に KV キャッシュ（TTL 7日）
+- get_day_summary に transactions・locationHistory を追加
+
 ## 0.1.0 - 2026-03-19
 
 - Google Calendar のイベント取得に対応（指定日の予定一覧）

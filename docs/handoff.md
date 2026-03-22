@@ -37,8 +37,8 @@
 | `get_photos_url` | **完了** | Uint8Array / btoa（Workers 互換） |
 | `get_diary` | **スタブ完了** | 空配列を返す（日記アプリ未開発） |
 | `get_day_summary` | **完了** | Promise.allSettled 並行取得（transactions 含む） |
-| `get_transactions` | **完了** | Cloudflare Workers KV から CSV を取得・パース |
-| `get_location_history` | **完了** | Google Maps Timeline.json を KV から取得、visit/activity を返す |
+| `get_transactions` | **完了** | Cloudflare R2 から月次 CSV を取得・パース（`transactions/YYYY-MM.csv`） |
+| `get_location_history` | **完了** | Google Maps Timeline.json を R2 から取得し日付別にフィルタ・KV キャッシュ（TTL 7日） |
 
 ### Transport
 

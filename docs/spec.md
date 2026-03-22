@@ -1,7 +1,7 @@
 # furikaeri-mcp — 仕様書
 
-> バージョン: 0.2.0
-> 最終更新: 2026-03-19
+> バージョン: 0.3.0
+> 最終更新: 2026-03-23
 
 ---
 
@@ -13,12 +13,14 @@ furikaeri-mcp は、複数のデータソースを統合して「ある日の振
 
 | データソース | 接続方式 | 内容 |
 |---|---|---|
-| Yarukoto（TODO アプリ） | Supabase PostgreSQL（Prisma） | タスクの完了・未完了・スキップ |
-| Peak Log（ピーク体験記録） | Supabase PostgreSQL（Prisma） | Activity ログ・余韻（Reflection） |
+| Yarukoto（TODO アプリ） | Supabase PostgreSQL（PostgREST） | タスクの完了・未完了・スキップ |
+| Peak Log（ピーク体験記録） | Supabase PostgreSQL（PostgREST） | Activity ログ・余韻（Reflection） |
 | GitHub | GitHub REST API（PAT 認証） | コミット履歴 |
-| 日記アプリ（新規開発予定） | Supabase PostgreSQL（Prisma） | 日記エントリ |
+| 日記アプリ（新規開発予定） | Supabase PostgreSQL（PostgREST） | 日記エントリ |
 | Google Calendar | Google Calendar API v3 | 予定・イベント |
 | Google Photos | URL 生成（API 不使用） | 検索 URL |
+| マネーフォワード ME | Cloudflare R2（CSV） | 決済・支出履歴 |
+| Google Maps タイムライン | Cloudflare R2（Timeline.json） | 移動・訪問場所履歴 |
 
 ---
 
@@ -410,7 +412,7 @@ function generatePhotosSearchUrl(query: string): string {
 
 ### 4.7 get_day_summary（集約ツール）
 
-上記 5 ツールを内部的にまとめて呼び出し、1 日分のデータを一括返却する。
+上記ツールを内部的にまとめて呼び出し、1 日分のデータを一括返却する。
 
 **パラメータ:**
 
@@ -427,9 +429,122 @@ function generatePhotosSearchUrl(query: string): string {
   "peakLogs": { "..." : "..." },
   "diary": { "..." : "..." },
   "calendarEvents": { "..." : "..." },
-  "photosUrl": "https://photos.google.com/search/..."
+  "photosUrl": "https://photos.google.com/search/...",
+  "transactions": { "transactions": [ "..." ] },
+  "locationHistory": { "segments": [ "..." ] }
 }
 ```
+
+---
+
+### 4.8 get_transactions
+
+マネーフォワード ME からエクスポートした CSV を Cloudflare R2 から取得し、指定日の決済・支出履歴を返す。
+
+**パラメータ:**
+
+| 名前 | 型 | 必須 | 説明 |
+|---|---|---|---|
+| date | string (YYYY-MM-DD) | ✓ | 対象日付 |
+
+**返却データ:**
+
+```json
+{
+  "transactions": [
+    {
+      "date": "2026-03-14",
+      "content": "セブン-イレブン",
+      "amount": 540,
+      "institution": "楽天カード",
+      "categoryL": "食費",
+      "categoryM": "コンビニ",
+      "memo": ""
+    }
+  ]
+}
+```
+
+**R2 オブジェクトキー:** `transactions/YYYY-MM.csv`（月次ファイル）
+
+**CSV フォーマット（マネーフォワード ME エクスポート形式）:**
+
+- 1 行目: ヘッダー（スキップ）
+- `fields[1]`: 日付（`YYYY/MM/DD` → `YYYY-MM-DD` に変換）
+- `fields[2]`: 内容
+- `fields[3]`: 金額（カンマ区切り → 整数）
+- `fields[4]`: 保有金融機関
+- `fields[5]`: 大項目（カテゴリ）
+- `fields[6]`: 中項目（サブカテゴリ）
+- `fields[7]`: メモ
+- `fields[8]`: 振替フラグ（`"1"` の場合は除外）
+
+**CSV アップロード手順（月次運用）:**
+
+```bash
+iconv -f SHIFT_JIS -t UTF-8 download.csv > transactions-YYYY-MM.csv
+npx wrangler r2 object put furikaeri-storage/transactions/YYYY-MM.csv --file=./transactions-YYYY-MM.csv --remote
+```
+
+---
+
+### 4.9 get_location_history
+
+Google Maps タイムラインからエクスポートした Timeline.json を Cloudflare R2 から取得し、指定日の移動・訪問場所を返す。102MB 超のファイルに対応するため R2 から取得し、日付別にパース結果を KV にキャッシュする。
+
+**パラメータ:**
+
+| 名前 | 型 | 必須 | 説明 |
+|---|---|---|---|
+| date | string (YYYY-MM-DD) | ✓ | 対象日付 |
+
+**返却データ:**
+
+```json
+{
+  "segments": [
+    {
+      "startTime": "2026-03-14T09:00:00Z",
+      "endTime": "2026-03-14T10:30:00Z",
+      "type": "visit",
+      "visit": {
+        "placeId": "ChIJ...",
+        "semanticType": "TYPE_WORK",
+        "probability": 0.95,
+        "placeLocation": "35.6895,139.6917"
+      }
+    },
+    {
+      "startTime": "2026-03-14T10:30:00Z",
+      "endTime": "2026-03-14T11:00:00Z",
+      "type": "activity",
+      "activity": {
+        "startLocation": "35.6895,139.6917",
+        "endLocation": "35.6580,139.7016",
+        "distanceMeters": 5200,
+        "type": "IN_PASSENGER_VEHICLE"
+      }
+    }
+  ]
+}
+```
+
+**R2 オブジェクトキー:** `location-history/Timeline.json`（固定）
+
+**KV キャッシュキー:** `location-history:{date}`（TTL: 7日間）
+
+**KV キャッシュ戦略:** R2 から 102MB の JSON を毎回パースするのを避けるため、日付別のパース結果を KV にキャッシュする。過去データは変わらないため TTL は 7 日間。
+
+**Timeline.json アップロード手順:**
+
+```bash
+npx wrangler r2 object put furikaeri-storage/location-history/Timeline.json --file=./Timeline.json --remote
+```
+
+**`semanticSegments` のフィルタリング:**
+- `timelinePath` / `timelineMemory` を含むセグメントは除外
+- `startTime` を JST に変換して日付フィルタリング
+- `visit` または `activity` を持つセグメントのみ返す
 
 ---
 
@@ -534,6 +649,8 @@ furikaeri-mcp/
 │   │   ├── get-diary.ts          # 日記エントリ取得（スタブ）
 │   │   ├── get-calendar-events.ts # Google Calendar 予定取得
 │   │   ├── get-photos-url.ts     # Google Photos URL 生成
+│   │   ├── get-transactions.ts   # マネーフォワード ME 決済履歴取得
+│   │   ├── get-location-history.ts # Google Maps タイムライン取得
 │   │   └── get-day-summary.ts    # 集約ツール
 │   ├── lib/
 │   │   ├── supabase.ts       # Supabase クライアント生成ヘルパー
@@ -645,7 +762,9 @@ Cloudflare Workers（無料プラン）
 | リソース | 用途 |
 |---|---|
 | Cloudflare Workers | MCP サーバー本体 |
-| Cloudflare KV | OAuth トークン管理 |
+| Cloudflare KV（`OAUTH_KV`） | OAuth トークン管理 |
+| Cloudflare KV（`FURIKAERI_KV`） | location-history 日付別キャッシュ |
+| Cloudflare R2（`furikaeri-storage`） | Timeline.json・transactions CSV の格納 |
 | GitHub OAuth App × 2 | ローカル開発用 + 本番用 |
 
 ### 12.3 デプロイ手順
