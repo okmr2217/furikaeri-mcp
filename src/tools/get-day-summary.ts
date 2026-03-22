@@ -7,6 +7,21 @@ import { formatDateForPhotos, generatePhotosSearchUrl } from "../lib/photos-url.
 import { fetchLocationHistoryForDate } from "./get-location-history.js";
 import type { Env, Task, TaskReason } from "../types/index.js";
 
+const SOURCE_TIMEOUT_MS = 15_000;
+const LOCATION_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label}: ${ms}ms でタイムアウト`));
+    }, ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
 function parseCSVLine(line: string): string[] {
   const trimmed = line.startsWith('"') ? line.slice(1) : line;
   const cleaned = trimmed.endsWith('"') ? trimmed.slice(0, -1) : trimmed;
@@ -227,13 +242,13 @@ export function registerGetDaySummary(server: McpServer, env: Env) {
     paramsSchema,
     async ({ date }) => {
       const [tasksResult, peakLogsResult, diaryResult, calendarResult, photosResult, transactionsResult, locationHistoryResult] = await Promise.allSettled([
-        fetchTasks(env, date),
-        fetchPeakLogs(env, date),
+        withTimeout(fetchTasks(env, date), SOURCE_TIMEOUT_MS, "tasks"),
+        withTimeout(fetchPeakLogs(env, date), SOURCE_TIMEOUT_MS, "peakLogs"),
         fetchDiary(date),
-        fetchCalendar(env, date),
+        withTimeout(fetchCalendar(env, date), SOURCE_TIMEOUT_MS, "calendar"),
         Promise.resolve(fetchPhotosUrl(date)),
-        fetchTransactions(env, date),
-        fetchLocationHistoryForDate(env, date),
+        withTimeout(fetchTransactions(env, date), SOURCE_TIMEOUT_MS, "transactions"),
+        withTimeout(fetchLocationHistoryForDate(env, date), LOCATION_TIMEOUT_MS, "locationHistory"),
       ]);
 
       const resolveResult = <T>(result: PromiseSettledResult<T>, code: string) => {
