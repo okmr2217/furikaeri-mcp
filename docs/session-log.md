@@ -23,6 +23,22 @@
 
 ---
 
+## 2026-03-23 セッション記録 #19
+
+### やったこと
+- `get_tasks` / `get_commits` / `get_location_history` / `get_day_summary` の description 末尾に `conversation_search` 補完ヒントを追記
+  - `get_day_summary` のみ「その日の」を含む文言（他の3ツールとは微妙に異なる）
+  - 既存の description は変更・削除せず、末尾に追記するのみ
+
+### 技術メモ
+- MCP ツールの description は Claude へのプロンプトとして機能するため、振り返り時に会話履歴（`conversation_search`）も自動参照させる誘導が可能
+
+### 次にやりたいこと
+- 案C: Timeline.json を月次分割して R2 保存（初回も高速化できる根本的解決策）
+- 日記アプリ開発（`get_diary` のスタブ解除）
+
+---
+
 ## 2026-03-23 セッション記録 #18
 
 ### やったこと

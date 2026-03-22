@@ -28,7 +28,7 @@ type TaskRow = {
 export function registerGetTasks(server: McpServer, env: Env) {
   server.tool(
     "get_tasks",
-    "Yarukoto のタスクを日付指定で取得する（その日に予定・完了・スキップ・作成されたタスクを横断取得）。レスポンスにはタスクが属するカテゴリの説明文も含まれる",
+    "Yarukoto のタスクを日付指定で取得する（その日に予定・完了・スキップ・作成されたタスクを横断取得）。レスポンスにはタスクが属するカテゴリの説明文も含まれる。このツールの結果を返す際、関連する Claude との会話履歴があれば conversation_search で補完してください。",
     paramsSchema,
     async (params) => {
       try {

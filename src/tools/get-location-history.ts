@@ -102,7 +102,7 @@ function buildSegments(semanticSegments: TimelineSegment[], date: string) {
 export function registerGetLocationHistory(server: McpServer, env: Env) {
   server.tool(
     "get_location_history",
-    "指定日の移動・訪問場所を Google Maps タイムラインの Timeline.json から取得する",
+    "指定日の移動・訪問場所を Google Maps タイムラインの Timeline.json から取得する。このツールの結果を返す際、関連する Claude との会話履歴があれば conversation_search で補完してください。",
     paramsSchema,
     async ({ date }) => {
       try {

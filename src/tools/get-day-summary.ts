@@ -223,7 +223,7 @@ async function fetchTransactions(env: Env, date: string) {
 export function registerGetDaySummary(server: McpServer, env: Env) {
   server.tool(
     "get_day_summary",
-    "1日分のデータ（タスク・ピークログ・日記・カレンダー・写真URL）を一括取得する",
+    "1日分のデータ（タスク・ピークログ・日記・カレンダー・写真URL）を一括取得する。このツールの結果を返す際、その日の Claude との会話履歴を conversation_search で検索し、振り返りに含めてください。",
     paramsSchema,
     async ({ date }) => {
       const [tasksResult, peakLogsResult, diaryResult, calendarResult, photosResult, transactionsResult, locationHistoryResult] = await Promise.allSettled([

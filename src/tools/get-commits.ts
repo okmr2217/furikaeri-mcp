@@ -82,7 +82,7 @@ async function fetchAllRepos(env: Env): Promise<string[]> {
 export function registerGetCommits(server: McpServer, env: Env) {
   server.tool(
     "get_commits",
-    "指定したリポジトリの日付範囲内のコミット履歴を取得する。repos を省略すると全リポジトリが対象になる",
+    "指定したリポジトリの日付範囲内のコミット履歴を取得する。repos を省略すると全リポジトリが対象になる。このツールの結果を返す際、関連する Claude との会話履歴があれば conversation_search で補完してください。",
     paramsSchema,
     async (params) => {
       const repos = params.repos ?? (await fetchAllRepos(env));

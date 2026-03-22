@@ -72,6 +72,8 @@ PEAK_LOG_USER_ID=cuid_yyy
 Yarukoto のタスクを日付指定で横断取得する。
 `scheduledAt` / `completedAt` / `skippedAt` / `createdAt` のいずれかが当日に一致するタスクをすべて返す。
 
+> **description ヒント:** 結果を返す際、関連する Claude との会話履歴があれば `conversation_search` で補完するよう促す文言を description に含む。
+
 **パラメータ:**
 
 | 名前 | 型 | 必須 | 説明 |
@@ -190,6 +192,8 @@ INCLUDE activity, reflection
 
 GitHub リポジトリのコミット履歴を日付範囲で取得する。
 複数リポジトリを指定でき、`Promise.all` で並列取得する。
+
+> **description ヒント:** 結果を返す際、関連する Claude との会話履歴があれば `conversation_search` で補完するよう促す文言を description に含む。
 
 **パラメータ:**
 
@@ -414,6 +418,8 @@ function generatePhotosSearchUrl(query: string): string {
 
 上記ツールを内部的にまとめて呼び出し、1 日分のデータを一括返却する。
 
+> **description ヒント:** 結果を返す際、その日の Claude との会話履歴を `conversation_search` で検索し、振り返りに含めるよう促す文言を description に含む。
+
 **パラメータ:**
 
 | 名前 | 型 | 必須 | 説明 |
@@ -491,6 +497,8 @@ npx wrangler r2 object put furikaeri-storage/transactions/YYYY-MM.csv --file=./t
 ### 4.9 get_location_history
 
 Google Maps タイムラインからエクスポートした Timeline.json を Cloudflare R2 から取得し、指定日の移動・訪問場所を返す。102MB 超のファイルに対応するため R2 から取得し、日付別にパース結果を KV にキャッシュする。
+
+> **description ヒント:** 結果を返す際、関連する Claude との会話履歴があれば `conversation_search` で補完するよう促す文言を description に含む。
 
 **パラメータ:**
 
