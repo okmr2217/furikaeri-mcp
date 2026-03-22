@@ -4,40 +4,6 @@
 
 ---
 
-## get_chat_history — Claude 会話履歴
-
-その日の Claude との会話内容を振り返る。
-
-### データソース
-
-Claude（claude.ai / Claude Code）
-
-### 取得方法の選択肢
-
-| 方法 | 概要 | 実現性 |
-|---|---|---|
-| claude.ai データエクスポート | Settings > Privacy から全会話履歴を ZIP（JSON）でダウンロード。メールでリンクが届き 24 時間有効 | 手動操作が必要。自動化不可。日次の振り返りには不向き |
-| Claude Code ローカルログ | `~/.claude/projects/` 配下に JSONL 形式で保存されている。`claude-conversation-extractor` 等のツールで抽出可能 | Claude Code の会話のみ対象。claude.ai の会話は含まれない |
-| claude.ai 内蔵の過去チャット検索 | claude.ai のプロジェクト内で `conversation_search` / `recent_chats` ツールが利用可能 | MCP ツールとして外部から呼ぶ手段がない |
-| Anthropic API（ステートレス） | API 経由の会話は自前で保存すれば自由に取得可能 | claude.ai での会話は対象外 |
-
-### 制約・課題
-
-- claude.ai の会話履歴をプログラムから取得する公式 API は存在しない
-- データエクスポートは全量一括で、日付指定やフィルタ不可
-- Claude Code のログは JSONL で構造化されているため、パースは容易
-- 現実的には「Claude Code のログを読む」か「エクスポート ZIP を定期的に取り込む」の二択
-
-### 実装アプローチ案
-
-Claude Code のローカルログ（`~/.claude/projects/`）をパースして日付でフィルタする方式が最も現実的。ただし claude.ai の会話はカバーできない。
-
-### 難易度
-
-中〜高（公式 API がないため、方式選定に工夫が必要）
-
----
-
 ## get_location_history — Google Map タイムライン
 
 その日の移動・訪問場所を取得する。
@@ -148,7 +114,6 @@ YouTube（Google アカウント）
 |---|---|---|---|---|
 | `get_watch_history` | 中 | △（Takeout 手動） | 中 | ★★★ |
 | `get_transactions` | 中〜高 | △（API 要調査） | 高 | ★★★ |
-| `get_chat_history` | 中〜高 | ○（Code ログのみ） | 中 | ★★ |
 | `get_location_history` | 高 | ✕（手動エクスポート） | 高 | ★★ |
 
 > 振り返り価値が高くても自動化が難しいものは優先度を下げている。
