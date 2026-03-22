@@ -1,5 +1,8 @@
 import type { Env } from "../types/index.js";
 
+const KV_TOKEN_KEY = "google-calendar-access-token";
+const TOKEN_TTL_SECONDS = 3000; // 50分（有効期限3600秒より余裕を持たせる）
+
 type AccessTokenResponse = {
   access_token: string;
 };
@@ -16,11 +19,10 @@ export type GoogleCalendarListResponse = {
   items?: GoogleCalendarEvent[];
 };
 
-export async function fetchCalendarEvents(
-  env: Env,
-  date: string,
-  calendarId = "primary",
-): Promise<GoogleCalendarListResponse> {
+async function getAccessToken(env: Env): Promise<string> {
+  const cached = await env.FURIKAERI_KV.get(KV_TOKEN_KEY);
+  if (cached) return cached;
+
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -35,6 +37,16 @@ export async function fetchCalendarEvents(
     throw new Error(`Google OAuth token refresh failed: ${tokenRes.status}`);
   }
   const { access_token } = (await tokenRes.json()) as AccessTokenResponse;
+  await env.FURIKAERI_KV.put(KV_TOKEN_KEY, access_token, { expirationTtl: TOKEN_TTL_SECONDS });
+  return access_token;
+}
+
+export async function fetchCalendarEvents(
+  env: Env,
+  date: string,
+  calendarId = "primary",
+): Promise<GoogleCalendarListResponse> {
+  const access_token = await getAccessToken(env);
 
   const params = new URLSearchParams({
     timeMin: `${date}T00:00:00+09:00`,

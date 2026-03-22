@@ -4,6 +4,7 @@ import { createYarukotoClient, createPeakLogClient } from "../lib/supabase.js";
 import { toJSTDateRange, toJSTISOString } from "../lib/date-utils.js";
 import { fetchCalendarEvents } from "../lib/google-calendar.js";
 import { formatDateForPhotos, generatePhotosSearchUrl } from "../lib/photos-url.js";
+import { fetchLocationHistoryForDate } from "./get-location-history.js";
 import type { Env, Task, TaskReason } from "../types/index.js";
 
 function parseCSVLine(line: string): string[] {
@@ -170,49 +171,6 @@ function fetchPhotosUrl(date: string) {
   return { date, searchQuery, url };
 }
 
-async function fetchLocationHistory(env: Env, date: string) {
-  const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
-  const json = obj ? await obj.text() : null;
-  if (json === null) return { segments: [] };
-
-  const parsed = JSON.parse(json) as { semanticSegments?: Array<{
-    startTime: string;
-    endTime: string;
-    visit?: { topCandidate?: { placeId: string; semanticType: string; probability: number; placeLocation?: { latLng: string } } };
-    activity?: { start?: { latLng: string }; end?: { latLng: string }; distanceMeters?: number; topCandidate?: { type: string } };
-    timelinePath?: unknown;
-    timelineMemory?: unknown;
-  }> };
-  const semanticSegments = parsed.semanticSegments ?? [];
-
-  const segments = semanticSegments
-    .filter((seg) => !("timelineMemory" in seg) && !("timelinePath" in seg))
-    .filter((seg) => {
-      const d = new Date(seg.startTime);
-      const jstMs = d.getTime() + 9 * 60 * 60 * 1000;
-      return new Date(jstMs).toISOString().slice(0, 10) === date;
-    })
-    .map((seg) => {
-      if (seg.visit) {
-        const tc = seg.visit.topCandidate;
-        return {
-          startTime: seg.startTime, endTime: seg.endTime, type: "visit" as const,
-          visit: tc ? { placeId: tc.placeId, semanticType: tc.semanticType, probability: tc.probability, placeLocation: tc.placeLocation?.latLng ?? "" } : undefined,
-        };
-      }
-      if (seg.activity) {
-        const ac = seg.activity;
-        return {
-          startTime: seg.startTime, endTime: seg.endTime, type: "activity" as const,
-          activity: { startLocation: ac.start?.latLng ?? "", endLocation: ac.end?.latLng ?? "", distanceMeters: ac.distanceMeters ?? 0, type: ac.topCandidate?.type ?? "" },
-        };
-      }
-      return null;
-    })
-    .filter((seg): seg is NonNullable<typeof seg> => seg !== null);
-
-  return { segments };
-}
 
 async function fetchTransactions(env: Env, date: string) {
   const yearMonth = date.slice(0, 7);
@@ -275,7 +233,7 @@ export function registerGetDaySummary(server: McpServer, env: Env) {
         fetchCalendar(env, date),
         Promise.resolve(fetchPhotosUrl(date)),
         fetchTransactions(env, date),
-        fetchLocationHistory(env, date),
+        fetchLocationHistoryForDate(env, date),
       ]);
 
       const resolveResult = <T>(result: PromiseSettledResult<T>, code: string) => {

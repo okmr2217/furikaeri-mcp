@@ -40,6 +40,65 @@ type TimelineSegment = {
   timelineMemory?: unknown;
 };
 
+const KV_LOCATION_CACHE_TTL = 60 * 60 * 24 * 7; // 7日間（過去データは変わらないため長め）
+
+export async function fetchLocationHistoryForDate(env: Env, date: string): Promise<{ segments: ReturnType<typeof buildSegments> }> {
+  const kvKey = `location-history:${date}`;
+  const cached = await env.FURIKAERI_KV.get(kvKey);
+  if (cached) return JSON.parse(cached) as { segments: ReturnType<typeof buildSegments> };
+
+  const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
+  const json = obj ? await obj.text() : null;
+  if (json === null) return { segments: [] };
+
+  const parsed = JSON.parse(json) as { semanticSegments?: TimelineSegment[] };
+  const semanticSegments = parsed.semanticSegments ?? [];
+  const segments = buildSegments(semanticSegments, date);
+
+  await env.FURIKAERI_KV.put(kvKey, JSON.stringify({ segments }), { expirationTtl: KV_LOCATION_CACHE_TTL });
+  return { segments };
+}
+
+function buildSegments(semanticSegments: TimelineSegment[], date: string) {
+  return semanticSegments
+    .filter((seg) => !("timelineMemory" in seg) && !("timelinePath" in seg))
+    .filter((seg) => toJSTDateString(seg.startTime) === date)
+    .map((seg) => {
+      if (seg.visit) {
+        const tc = seg.visit.topCandidate;
+        return {
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          type: "visit" as const,
+          visit: tc
+            ? {
+                placeId: tc.placeId,
+                semanticType: tc.semanticType,
+                probability: tc.probability,
+                placeLocation: tc.placeLocation?.latLng ?? "",
+              }
+            : undefined,
+        };
+      }
+      if (seg.activity) {
+        const ac = seg.activity;
+        return {
+          startTime: seg.startTime,
+          endTime: seg.endTime,
+          type: "activity" as const,
+          activity: {
+            startLocation: ac.start?.latLng ?? "",
+            endLocation: ac.end?.latLng ?? "",
+            distanceMeters: ac.distanceMeters ?? 0,
+            type: ac.topCandidate?.type ?? "",
+          },
+        };
+      }
+      return null;
+    })
+    .filter((seg): seg is NonNullable<typeof seg> => seg !== null);
+}
+
 export function registerGetLocationHistory(server: McpServer, env: Env) {
   server.tool(
     "get_location_history",
@@ -47,54 +106,8 @@ export function registerGetLocationHistory(server: McpServer, env: Env) {
     paramsSchema,
     async ({ date }) => {
       try {
-        const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
-        const json = obj ? await obj.text() : null;
-        if (json === null) {
-          return { content: [{ type: "text" as const, text: JSON.stringify({ segments: [] }) }] };
-        }
-
-        const parsed = JSON.parse(json) as { semanticSegments?: TimelineSegment[] };
-        const semanticSegments = parsed.semanticSegments ?? [];
-
-        const segments = semanticSegments
-          .filter((seg) => !("timelineMemory" in seg) && !("timelinePath" in seg))
-          .filter((seg) => toJSTDateString(seg.startTime) === date)
-          .map((seg) => {
-            if (seg.visit) {
-              const tc = seg.visit.topCandidate;
-              return {
-                startTime: seg.startTime,
-                endTime: seg.endTime,
-                type: "visit" as const,
-                visit: tc
-                  ? {
-                      placeId: tc.placeId,
-                      semanticType: tc.semanticType,
-                      probability: tc.probability,
-                      placeLocation: tc.placeLocation?.latLng ?? "",
-                    }
-                  : undefined,
-              };
-            }
-            if (seg.activity) {
-              const ac = seg.activity;
-              return {
-                startTime: seg.startTime,
-                endTime: seg.endTime,
-                type: "activity" as const,
-                activity: {
-                  startLocation: ac.start?.latLng ?? "",
-                  endLocation: ac.end?.latLng ?? "",
-                  distanceMeters: ac.distanceMeters ?? 0,
-                  type: ac.topCandidate?.type ?? "",
-                },
-              };
-            }
-            return null;
-          })
-          .filter((seg): seg is NonNullable<typeof seg> => seg !== null);
-
-        return { content: [{ type: "text" as const, text: JSON.stringify({ segments }) }] };
+        const result = await fetchLocationHistoryForDate(env, date);
+        return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
       } catch (e) {
         const message = e instanceof Error ? e.message : "不明なエラー";
         return {
