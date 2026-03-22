@@ -38,6 +38,7 @@
 | `get_diary` | **スタブ完了** | 空配列を返す（日記アプリ未開発） |
 | `get_day_summary` | **完了** | Promise.allSettled 並行取得（transactions 含む） |
 | `get_transactions` | **完了** | Cloudflare Workers KV から CSV を取得・パース |
+| `get_location_history` | **完了** | Google Maps Timeline.json を KV から取得、visit/activity を返す |
 
 ### Transport
 
@@ -60,7 +61,8 @@
    ```
 
 3. **本番環境での全ツール動作確認**
-   - get_tasks / get_peak_logs / get_calendar_events / get_commits / get_transactions を実データで確認
+   - get_tasks / get_peak_logs / get_calendar_events / get_commits / get_transactions / get_location_history を実データで確認
+   - get_location_history は実際の Timeline.json（全期間）を KV にアップロード後に確認
 
 4. **毎月の transactions CSV 更新**（月次運用）
    ```bash
@@ -70,6 +72,7 @@
 
 ### その他の注意点
 
+- **`get_location_history` の KV キー**: `location-history/Timeline.json`（固定）。Google Maps タイムライン → スマホからエクスポートした JSON をアップロード
 - **`get_transactions` の KV キー設計**: `transactions/YYYY-MM.csv`（月次ファイル）。CSV は Shift_JIS → UTF-8 変換済みを KV にアップロードすること
 - **`FURIKAERI_KV` namespace ID**: `1853546da21e4a42985acc9af617dc24`（wrangler.toml に設定済み）
 - **`performedAt` のレスポンス形式が変更済み**: `"2026-03-14T19:10:00Z"` → `"2026-03-14T19:10:00+09:00"`（`toJSTISOString` で変換）

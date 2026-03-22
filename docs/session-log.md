@@ -23,6 +23,32 @@
 
 ---
 
+## 2026-03-23 セッション記録 #17
+
+### やったこと
+- `get_location_history` ツールを新規実装
+  - Google Maps タイムラインの `Timeline.json` を `FURIKAERI_KV` から取得・パース
+  - KV キー: `location-history/Timeline.json`（固定）
+  - `timelineMemory` / `timelinePath` セグメントを除外し、`visit` と `activity` のみ返す
+  - `startTime` の JST 日付フィルタ（`+09:00` オフセット付きタイムスタンプを直接パース）
+  - KV にキーが存在しない場合は `{ segments: [] }` を返す（エラーにしない）
+- `get_day_summary` に `locationHistory` フィールドを追加
+- `src/index.ts` にツール登録
+- テストデータ（`test-data/Timeline.json`）を作成し、ローカル・リモート KV にアップロード
+- `wrangler deploy` で本番デプロイ完了
+
+### 技術メモ
+- Timeline.json のタイムスタンプは `+09:00` オフセット付き JST。UTC への変換は `getTime() + 9h` で実施
+- 1つの visit が数日にまたがる場合がある（例: HOME の visit）→ `startTime` の日付でフィルタ
+- `timelinePath` は `visit`/`activity` と時間帯が重複するため除外（Claude に生 GPS データを渡す必要はない）
+- TODO: Timeline.json が 25MB を超える場合は R2 移行を検討（コメントあり）
+
+### 次にやりたいこと
+- 実際の Timeline.json をアップロードして Claude から動作確認
+- 本番環境での全ツール実データ動作確認
+
+---
+
 ## 2026-03-23 セッション記録 #16
 
 ### やったこと
