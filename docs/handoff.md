@@ -1,7 +1,7 @@
 # furikaeri-mcp — セッション引き継ぎ
 
-> 最終更新: 2026-03-23（セッション #15）
-> バージョン: 0.1.0
+> 最終更新: 2026-03-23（セッション #18）
+> バージョン: 0.3.0
 > このドキュメントは「今どこにいるか」を記録する。コンセプト・技術設計は @docs/project.md を参照。
 
 ---
@@ -74,6 +74,8 @@
 
 - **R2 バケット `furikaeri-storage`**: `location-history/Timeline.json`（102MB）と `transactions/YYYY-MM.csv` を格納。KV ではなく R2 を使用
 - **`get_location_history` の R2 キー**: `location-history/Timeline.json`（固定）。Google Maps タイムラインからエクスポートした JSON をアップロード
+- **locationHistory KV キャッシュ**: キー `location-history:YYYY-MM-DD`、TTL 7日。Timeline.json 再アップロード後は `wrangler kv key delete "location-history:YYYY-MM-DD" --binding FURIKAERI_KV --remote` でクリアすること
+- **Google Calendar access_token KV キャッシュ**: キー `google-calendar-access-token`、TTL 50分。手動クリアは不要（期限切れで自動リフレッシュ）
 - **`get_transactions` の R2 キー設計**: `transactions/YYYY-MM.csv`（月次ファイル）。CSV は Shift_JIS → UTF-8 変換済みを R2 にアップロードすること
 - **`FURIKAERI_KV` namespace ID**: `1853546da21e4a42985acc9af617dc24`（wrangler.toml に設定済み）
 - **`performedAt` のレスポンス形式が変更済み**: `"2026-03-14T19:10:00Z"` → `"2026-03-14T19:10:00+09:00"`（`toJSTISOString` で変換）
@@ -91,6 +93,7 @@
 
 ## 次のセッションで相談したいこと
 
-1. 本番環境での全ツール実データ動作確認（get_transactions 含む）
-2. 日記アプリ開発（`get_diary` のスタブ解除）
-3. 追加ツール・機能の検討
+1. 本番環境での全ツール実データ動作確認
+2. 案C: Timeline.json を月次分割して R2 保存（`location-history/YYYY-MM.json`）— 初回アクセスも高速化できる根本的解決策
+3. 日記アプリ開発（`get_diary` のスタブ解除）
+4. 追加ツール・機能の検討

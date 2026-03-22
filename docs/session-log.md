@@ -23,6 +23,31 @@
 
 ---
 
+## 2026-03-23 セッション記録 #18
+
+### やったこと
+- `get_day_summary` のパフォーマンス調査・改善
+  - **案B: Google Calendar access_token を KV キャッシュ**（TTL 50分）
+    - `src/lib/google-calendar.ts` に `getAccessToken()` を切り出し、`FURIKAERI_KV` でキャッシュ
+    - 毎回の OAuth token リフレッシュリクエスト（1 RTT）を削減
+  - **案A: locationHistory の KV 日次キャッシュ**（TTL 7日）
+    - `fetchLocationHistoryForDate()` を export 関数に切り出し
+    - `FURIKAERI_KV` キー: `location-history:YYYY-MM-DD`
+    - 2回目以降は 102MB R2 ダウンロード + JSON.parse をスキップ
+    - `get-day-summary.ts` のインライン実装を削除し、共通関数に統一
+- `wrangler deploy` で本番デプロイ完了（Version: 235c87a5）
+
+### 技術メモ
+- Google access_token は TTL を 3000 秒（50分）に設定。有効期限 3600 秒より余裕を持たせることで期限切れ直前のリクエストでエラーにならないようにしている
+- locationHistory キャッシュ TTL を 7日にした根拠: 過去データは変わらないが Timeline.json を再アップロードした際に古いキャッシュが残るリスクがある。その場合は `wrangler kv key delete` でクリア
+
+### 次にやりたいこと
+- 案C: Timeline.json を月次分割して R2 保存（初回も高速化できる根本的解決策）
+- 日記アプリ開発（`get_diary` のスタブ解除）
+- 本番環境での全ツール実データ動作確認
+
+---
+
 ## 2026-03-23 セッション記録 #17
 
 ### やったこと
