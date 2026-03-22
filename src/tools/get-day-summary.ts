@@ -218,7 +218,8 @@ async function fetchTransactions(env: Env, date: string) {
   const yearMonth = date.slice(0, 7);
   const kvKey = `transactions/${yearMonth}.csv`;
 
-  const csv = await env.FURIKAERI_KV.get(kvKey, "text");
+  const obj = await env.FURIKAERI_R2.get(kvKey);
+  const csv = obj ? await obj.text() : null;
   if (csv === null) return { transactions: [] };
 
   const lines = csv.split("\n");
