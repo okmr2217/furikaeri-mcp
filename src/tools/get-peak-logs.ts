@@ -24,6 +24,7 @@ type LogRow = {
     name: string;
     emoji: string | null;
     color: string | null;
+    description: string | null;
   };
   reflections: ReflectionRow | ReflectionRow[] | null;
 };
@@ -73,6 +74,12 @@ export function registerGetPeakLogs(server: McpServer, env: Env) {
           };
         });
 
+        const activitiesMap = new Map<string, string | null>();
+        for (const row of (rows ?? [] as LogRow[])) {
+          activitiesMap.set(row.activities.name, row.activities.description ?? null);
+        }
+        const activities = Array.from(activitiesMap.entries()).map(([name, description]) => ({ name, description }));
+
         const withReflection = logs.filter((l) => l.reflection !== null).length;
         const excitementValues = logs
           .filter((l) => l.reflection?.excitement != null)
@@ -84,6 +91,7 @@ export function registerGetPeakLogs(server: McpServer, env: Env) {
 
         const result = {
           date: params.date,
+          activities,
           logs,
           summary: { totalLogs: logs.length, withReflection, averageExcitement },
         };
