@@ -41,7 +41,7 @@ type TaskRow = {
   completedAt: string | null;
   skippedAt: string | null;
   createdAt: string;
-  categories: { name: string; color: string | null } | null;
+  categories: { name: string; color: string | null; description: string | null } | null;
 };
 
 type ReflectionRow = {
@@ -53,7 +53,7 @@ type ReflectionRow = {
 
 type LogRow = {
   performedAt: string;
-  activities: { name: string; emoji: string | null; color: string | null };
+  activities: { name: string; emoji: string | null; color: string | null; description: string | null };
   reflections: ReflectionRow | ReflectionRow[] | null;
 };
 
@@ -78,7 +78,8 @@ async function fetchTasks(env: Env, date: string) {
 
   if (error) throw new Error(error.message);
 
-  const tasks: Task[] = (rows ?? [] as TaskRow[]).map((t: TaskRow) => {
+  const taskRows = (rows ?? [] as TaskRow[]);
+  const tasks: Task[] = taskRows.map((t: TaskRow) => {
     const reasons: TaskReason[] = [];
     if (t.scheduledAt === date) reasons.push("scheduled");
     if (t.completedAt) {
@@ -106,8 +107,15 @@ async function fetchTasks(env: Env, date: string) {
     };
   });
 
+  const categoriesMap = new Map<string, string | null>();
+  for (const t of taskRows) {
+    if (t.categories) categoriesMap.set(t.categories.name, t.categories.description ?? null);
+  }
+  const categories = Array.from(categoriesMap.entries()).map(([name, description]) => ({ name, description }));
+
   return {
     date,
+    categories,
     tasks,
     summary: {
       total: tasks.length,
@@ -134,7 +142,8 @@ async function fetchPeakLogs(env: Env, date: string) {
 
   if (error) throw new Error(error.message);
 
-  const logs = (rows ?? [] as LogRow[]).map((row: LogRow) => {
+  const logRows = (rows ?? [] as LogRow[]);
+  const logs = logRows.map((row: LogRow) => {
     const reflectionRaw = row.reflections;
     const reflection: ReflectionRow | null = Array.isArray(reflectionRaw)
       ? (reflectionRaw.length > 0 ? reflectionRaw[0] : null)
@@ -149,13 +158,19 @@ async function fetchPeakLogs(env: Env, date: string) {
     };
   });
 
+  const activitiesMap = new Map<string, string | null>();
+  for (const row of logRows) {
+    activitiesMap.set(row.activities.name, row.activities.description ?? null);
+  }
+  const activities = Array.from(activitiesMap.entries()).map(([name, description]) => ({ name, description }));
+
   const withReflection = logs.filter((l) => l.reflection !== null).length;
   const excitementValues = logs.filter((l) => l.reflection?.excitement != null).map((l) => l.reflection!.excitement as number);
   const averageExcitement = excitementValues.length > 0
     ? Math.round((excitementValues.reduce((a, b) => a + b, 0) / excitementValues.length) * 10) / 10
     : null;
 
-  return { date, logs, summary: { totalLogs: logs.length, withReflection, averageExcitement } };
+  return { date, activities, logs, summary: { totalLogs: logs.length, withReflection, averageExcitement } };
 }
 
 async function fetchDiary(date: string) {

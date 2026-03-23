@@ -30,6 +30,10 @@
   - `activities` テーブルの `description` カラムを `LogRow` 型に追加
   - その日のログに登場したアクティビティを重複排除し `{ name, description }` 一覧として返す
   - `get_tasks` の `categories` 配列と同じパターン
+- `get_day_summary` の `tasks` / `peakLogs` に `categories` / `activities` 配列を追加
+  - `get_day_summary` 内の `fetchTasks` に `categories` 抽出を追加（単体 `get_tasks` と同じ構造に揃える）
+  - `get_day_summary` 内の `fetchPeakLogs` に `activities` 抽出を追加（単体 `get_peak_logs` と同じ構造に揃える）
+  - `TaskRow.categories` / `LogRow.activities` 型に `description` フィールドを追加
 
 ### 次にやりたいこと
 - 特になし
