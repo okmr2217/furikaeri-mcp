@@ -119,6 +119,65 @@ async function uploadLoc() {
   btn.disabled = false;
 }
 
+// --- 位置情報（全データ一括） ---
+document.getElementById('fullFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('fullInfo').textContent = file.name + ' (' + fmt(file.size) + ')';
+});
+
+async function uploadFull() {
+  const file = document.getElementById('fullFile').files[0];
+  if (!file) { setStatus('fullStatus', 'ng', 'ファイルを選択してください'); return; }
+  const btn = document.getElementById('fullBtn');
+  btn.disabled = true;
+  setStatus('fullStatus', 'loading', 'ファイルを読み込み中...');
+  let data;
+  try {
+    const text = await file.text();
+    data = JSON.parse(text);
+  } catch (e) {
+    setStatus('fullStatus', 'ng', 'JSON パースエラー: ' + e.message);
+    btn.disabled = false;
+    return;
+  }
+  const segments = data.semanticSegments || [];
+  if (segments.length === 0) { setStatus('fullStatus', 'ng', 'semanticSegments が見つかりません'); btn.disabled = false; return; }
+  const byMonth = {};
+  for (const seg of segments) {
+    const ym = (seg.startTime || '').slice(0, 7);
+    if (!ym || ym.length < 7) continue;
+    if (!byMonth[ym]) byMonth[ym] = { semanticSegments: [] };
+    byMonth[ym].semanticSegments.push(seg);
+  }
+  const months = Object.keys(byMonth).sort();
+  if (months.length === 0) { setStatus('fullStatus', 'ng', 'startTime から年月を取得できませんでした'); btn.disabled = false; return; }
+  const errors = [];
+  for (let i = 0; i < months.length; i++) {
+    const ym = months[i];
+    setStatus('fullStatus', 'loading', ym + ' をアップロード中... (' + (i + 1) + '/' + months.length + ')');
+    try {
+      const res = await fetch('/admin/upload/location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Year-Month': ym },
+        body: JSON.stringify(byMonth[ym])
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        errors.push(ym + ': ' + (json.error || res.status));
+      }
+    } catch (e) {
+      errors.push(ym + ': ' + e.message);
+    }
+  }
+  if (errors.length > 0) {
+    setStatus('fullStatus', 'ng', '一部エラー: ' + errors.join(', '));
+  } else {
+    setStatus('fullStatus', 'ok', '✓ ' + months.length + ' ヶ月分をアップロード完了（' + months[0] + ' 〜 ' + months[months.length - 1] + '）');
+  }
+  btn.disabled = false;
+}
+
 // --- KVキャッシュ削除 ---
 async function invalidate() {
   const month = document.getElementById('invMonth').value;
@@ -199,7 +258,17 @@ export function renderUploadPage(): string {
 </div>
 
 <div class="card">
-  <h2>位置情報 JSON</h2>
+  <h2>位置情報（全データ一括）</h2>
+  <p class="desc">Google Maps タイムラインからエクスポートした Timeline.json（全期間）をアップロード。月別に自動分割して R2 に保存します。</p>
+  <label>Timeline.json ファイル</label>
+  <input type="file" id="fullFile" accept=".json">
+  <p class="info" id="fullInfo"></p>
+  <button class="btn-p" id="fullBtn" onclick="uploadFull()">分割してアップロード</button>
+  <div class="status" id="fullStatus"></div>
+</div>
+
+<div class="card">
+  <h2>位置情報 JSON（月別）</h2>
   <p class="desc">Google Maps タイムラインからエクスポートした月別 JSON をアップロード。ファイル名に年月（例: 2026-03.json）が含まれていると自動検出します。</p>
   <label>対象年月</label>
   <input type="month" id="locMonth">
