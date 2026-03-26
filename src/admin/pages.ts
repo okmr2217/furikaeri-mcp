@@ -21,6 +21,10 @@ button { width: 100%; padding: 13px; font-size: 15px; font-weight: 600; border: 
 .ng { background: #fde8e8; color: #c00; display: block; }
 .loading { background: #f0f4ff; color: #0070f3; display: block; }
 a.logout { display: block; text-align: center; font-size: 13px; color: #999; padding: 12px; margin-top: 4px; }
+.steps { margin: 8px 0 0; padding-left: 18px; }
+.steps li { font-size: 13px; color: #444; margin-bottom: 5px; line-height: 1.5; }
+.platform { font-size: 12px; font-weight: 600; color: #0070f3; margin: 10px 0 4px; }
+.platform:first-child { margin-top: 0; }
 `;
 
 // String.raw を使うことで \n \d 等のエスケープが不要になる
@@ -255,6 +259,24 @@ export function renderUploadPage(): string {
   <p class="info" id="txInfo"></p>
   <button class="btn-p" id="txBtn" onclick="uploadTx()">アップロード</button>
   <div class="status" id="txStatus"></div>
+</div>
+
+<div class="card">
+  <h2>位置情報のエクスポート方法</h2>
+  <p class="desc">Google Maps タイムラインから Timeline.json を取得する手順。</p>
+  <p class="platform">Android</p>
+  <ol class="steps">
+    <li>端末の「設定」を開く</li>
+    <li>「位置情報」→「位置情報サービス」→「タイムライン」</li>
+    <li>「タイムラインデータをエクスポート」→「保存」</li>
+  </ol>
+  <p class="platform">iOS</p>
+  <ol class="steps">
+    <li>Google マップアプリを開く</li>
+    <li>右上のプロフィールアイコン →「…」</li>
+    <li>「位置情報とプライバシーの設定」</li>
+    <li>「タイムラインデータをエクスポート」</li>
+  </ol>
 </div>
 
 <div class="card">
