@@ -66,6 +66,27 @@ export type TasksResult = {
   };
 };
 
+export type AllTask = {
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority | null;
+  category: string | null;
+  memo: string | null;
+  scheduledAt: string | null;
+  completedAt: string | null;
+  skippedAt: string | null;
+  createdAt: string;
+};
+
+export type AllTasksResult = {
+  categories: Array<{ name: string; description: string | null }>;
+  tasks: AllTask[];
+  summary: {
+    total: number;
+    byStatus: { PENDING: number; COMPLETED: number; SKIPPED: number };
+  };
+};
+
 export type PeakLogEntry = {
   activity: {
     name: string;
