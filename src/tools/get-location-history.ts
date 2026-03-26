@@ -39,9 +39,85 @@ type TimelineSegment = {
 };
 
 const KV_LOCATION_CACHE_TTL = 60 * 60 * 24 * 7; // 7日間（過去データは変わらないため長め）
+const KV_PLACE_NAME_TTL = 60 * 60 * 24 * 90; // 90日間（店名はそうそう変わらない）
+
+type VisitSegment = {
+  startTime: string;
+  endTime: string;
+  type: "visit";
+  visit?: {
+    placeId: string;
+    placeName?: string | null;
+    semanticType: string;
+    probability: number;
+    placeLocation: string;
+  };
+};
+
+async function resolvePlaceNames(env: Env, segments: ReturnType<typeof buildSegments>): Promise<Map<string, string | null>> {
+  const visitSegments = segments.filter((s): s is VisitSegment => s.type === "visit");
+  const placeIds = visitSegments.filter((s) => s.visit?.placeId).map((s) => s.visit!.placeId);
+  const uniqueIds = [...new Set(placeIds)];
+  const result = new Map<string, string | null>();
+
+  if (uniqueIds.length === 0) return result;
+
+  // 上限チェック（Workers サブリクエスト上限 50）
+  const idsToResolve = uniqueIds.slice(0, 50);
+
+  // KV キャッシュを並行チェック
+  const cacheResults = await Promise.all(
+    idsToResolve.map(async (id) => ({
+      id,
+      name: await env.FURIKAERI_KV.get(`place-name:${id}`),
+    }))
+  );
+
+  const misses: string[] = [];
+  for (const { id, name } of cacheResults) {
+    if (name !== null) {
+      result.set(id, name);
+    } else {
+      misses.push(id);
+    }
+  }
+
+  // キャッシュミス分を Places API で並行解決
+  if (misses.length > 0) {
+    const apiResults = await Promise.all(
+      misses.map(async (id) => {
+        try {
+          const res = await fetch(`https://places.googleapis.com/v1/places/${id}`, {
+            headers: {
+              "X-Goog-Api-Key": env.GOOGLE_MAPS_API_KEY,
+              "X-Goog-FieldMask": "displayName",
+            },
+          });
+          if (!res.ok) return { id, name: null };
+          const data = (await res.json()) as { displayName?: { text?: string } };
+          return { id, name: data.displayName?.text ?? null };
+        } catch {
+          return { id, name: null };
+        }
+      })
+    );
+
+    // 結果を KV に保存 & Map に追加
+    await Promise.all(
+      apiResults.map(async ({ id, name }) => {
+        result.set(id, name);
+        if (name !== null) {
+          await env.FURIKAERI_KV.put(`place-name:${id}`, name, { expirationTtl: KV_PLACE_NAME_TTL });
+        }
+      })
+    );
+  }
+
+  return result;
+}
 
 export async function fetchLocationHistoryForDate(env: Env, date: string): Promise<{ segments: ReturnType<typeof buildSegments> }> {
-  const kvKey = `location-history:${date}`;
+  const kvKey = `location-history:v2:${date}`;
   const cached = await env.FURIKAERI_KV.get(kvKey);
   if (cached) return JSON.parse(cached) as { segments: ReturnType<typeof buildSegments> };
 
@@ -54,8 +130,23 @@ export async function fetchLocationHistoryForDate(env: Env, date: string): Promi
   const semanticSegments = parsed.semanticSegments ?? [];
   const segments = buildSegments(semanticSegments, date);
 
-  await env.FURIKAERI_KV.put(kvKey, JSON.stringify({ segments }), { expirationTtl: KV_LOCATION_CACHE_TTL });
-  return { segments };
+  // 場所名を解決して visit セグメントに付与
+  const nameMap = await resolvePlaceNames(env, segments);
+  const enrichedSegments = segments.map((seg) => {
+    if (seg.type === "visit" && seg.visit?.placeId) {
+      return {
+        ...seg,
+        visit: {
+          ...seg.visit,
+          placeName: nameMap.get(seg.visit.placeId) ?? null,
+        },
+      };
+    }
+    return seg;
+  });
+
+  await env.FURIKAERI_KV.put(kvKey, JSON.stringify({ segments: enrichedSegments }), { expirationTtl: KV_LOCATION_CACHE_TTL });
+  return { segments: enrichedSegments };
 }
 
 function buildSegments(semanticSegments: TimelineSegment[], date: string) {
