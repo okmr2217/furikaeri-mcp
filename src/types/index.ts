@@ -28,6 +28,12 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   GOOGLE_REFRESH_TOKEN: string;
+
+  // Google Maps Places API
+  GOOGLE_MAPS_API_KEY: string;
+
+  // 管理画面
+  ADMIN_SECRET: string;
 }
 
 export type TaskStatus = "PENDING" | "COMPLETED" | "SKIPPED";

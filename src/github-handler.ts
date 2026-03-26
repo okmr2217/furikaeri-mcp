@@ -14,6 +14,7 @@ import {
   validateOAuthState,
 } from "./workers-oauth-utils.js";
 import type { Env } from "./types/index.js";
+import { registerAdminRoutes } from "./admin/handler.js";
 
 const app = new Hono<{ Bindings: Env & { OAUTH_PROVIDER: OAuthHelpers } }>();
 
@@ -128,5 +129,7 @@ app.get("/callback", async (c) => {
   if (clearSessionCookie) headers.set("Set-Cookie", clearSessionCookie);
   return new Response(null, { status: 302, headers });
 });
+
+registerAdminRoutes(app);
 
 export { app as GitHubHandler };
