@@ -7,7 +7,6 @@ import type { Env, AllTask, AllTasksResult } from "../types/index.js";
 const paramsSchema = {
   status: z.enum(["PENDING", "COMPLETED", "SKIPPED"]).optional(),
   category: z.string().optional(),
-  limit: z.number().int().min(1).max(500).optional().default(100),
 };
 
 type TaskRow = {
@@ -39,8 +38,7 @@ export function registerGetAllTasks(server: McpServer, env: Env) {
           .from("tasks")
           .select("*, categories(*)")
           .eq("userId", userId)
-          .order("displayOrder", { ascending: true })
-          .limit(params.limit ?? 100);
+          .order("displayOrder", { ascending: true });
 
         if (params.status) {
           query = query.eq("status", params.status);

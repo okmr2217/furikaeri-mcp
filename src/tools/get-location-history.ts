@@ -121,8 +121,7 @@ export async function fetchLocationHistoryForDate(env: Env, date: string): Promi
   const cached = await env.FURIKAERI_KV.get(kvKey);
   if (cached) return JSON.parse(cached) as { segments: ReturnType<typeof buildSegments> };
 
-  const yearMonth = date.slice(0, 7);
-  const obj = await env.FURIKAERI_R2.get(`location-history/${yearMonth}.json`);
+  const obj = await env.FURIKAERI_R2.get("location-history/Timeline.json");
   const json = obj ? await obj.text() : null;
   if (json === null) return { segments: [] };
 
