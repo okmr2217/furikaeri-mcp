@@ -22,7 +22,7 @@ type TaskRow = {
   completedAt: string | null;
   skippedAt: string | null;
   createdAt: string;
-  categories: { name: string; color: string | null; description: string | null } | null;
+  categories: { name: string; color: string | null; description: string | null; archivedAt: string | null } | null;
 };
 
 export function registerGetTasks(server: McpServer, env: Env) {
@@ -58,6 +58,9 @@ export function registerGetTasks(server: McpServer, env: Env) {
         if (error) throw new Error(error.message);
 
         let taskRows = (rows ?? []) as TaskRow[];
+
+        // アーカイブ済みカテゴリのタスクを除外
+        taskRows = taskRows.filter((t) => t.categories === null || t.categories.archivedAt === null);
 
         if (params.category) {
           taskRows = taskRows.filter((t) => t.categories?.name === params.category);
