@@ -50,7 +50,7 @@ export function registerGetPeakLogs(server: McpServer, env: Env) {
 
         if (error) throw new Error(error.message);
 
-        const logs = (rows ?? [] as LogRow[]).map((row: LogRow) => {
+        const logs = ((rows ?? []) as LogRow[]).map((row: LogRow) => {
           const reflectionRaw = row.reflections;
           const reflection: ReflectionRow | null = Array.isArray(reflectionRaw)
             ? (reflectionRaw.length > 0 ? reflectionRaw[0] : null)
@@ -75,7 +75,7 @@ export function registerGetPeakLogs(server: McpServer, env: Env) {
         });
 
         const activitiesMap = new Map<string, string | null>();
-        for (const row of (rows ?? [] as LogRow[])) {
+        for (const row of ((rows ?? []) as LogRow[])) {
           activitiesMap.set(row.activities.name, row.activities.description ?? null);
         }
         const activities = Array.from(activitiesMap.entries()).map(([name, description]) => ({ name, description }));

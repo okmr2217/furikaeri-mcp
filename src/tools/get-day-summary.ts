@@ -78,7 +78,7 @@ async function fetchTasks(env: Env, date: string) {
 
   if (error) throw new Error(error.message);
 
-  const taskRows = (rows ?? [] as TaskRow[]);
+  const taskRows = (rows ?? []) as TaskRow[];
   const tasks: Task[] = taskRows.map((t: TaskRow) => {
     const reasons: TaskReason[] = [];
     if (t.scheduledAt === date) reasons.push("scheduled");
@@ -142,7 +142,7 @@ async function fetchPeakLogs(env: Env, date: string) {
 
   if (error) throw new Error(error.message);
 
-  const logRows = (rows ?? [] as LogRow[]);
+  const logRows = (rows ?? []) as LogRow[];
   const logs = logRows.map((row: LogRow) => {
     const reflectionRaw = row.reflections;
     const reflection: ReflectionRow | null = Array.isArray(reflectionRaw)
